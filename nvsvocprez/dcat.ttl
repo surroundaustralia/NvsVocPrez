@@ -26,7 +26,7 @@
     dcterms:description "A Content Negotiation by Profile-compliant service that provides access to all of this catalogue's information"@en ;
     dcterms:title "System ConnegP API" ;
     dcterms:type <http://purl.org/dc/dcmitype/Service> ;
-    dcat:endpointURL <http://nvs.surroundaustralia.com> ;
+    dcat:endpointURL <xxx> ;
     dcat:servesDataset <http://vocab.nerc.ac.uk/> ;
 .
 
@@ -35,6 +35,6 @@
     dcterms:description "A SPARQL Protocol-compliant service that provides access to all of this catalogue's information"@en ;
     dcterms:title "System SPARQL Service" ;
     dcterms:type <http://purl.org/dc/dcmitype/Service> ;
-    dcat:endpointURL <http://nvs.surroundaustralia.com/sparql> ;
+    dcat:endpointURL <xxxsparql> ;
     dcat:servesDataset <http://vocab.nerc.ac.uk/> ;
 .
