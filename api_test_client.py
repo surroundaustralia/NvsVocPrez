@@ -82,23 +82,52 @@ def make_endpoints(system_uri: str):
         ("A Thesaurus, WCATHES", f"{system_uri}/scheme/WCATHES/current/", None),
         ("A Concept, S0700046", f"{system_uri}/collection/S07/current/S0700046/", None),
         ("A Mapping, 337272", f"{system_uri}/mapping/I/337272/", None),
-        ("standard_name Concept, acoustic_...", f"{system_uri}/standard_name/acoustic_signal_roundtrip_travel_time_in_sea_water/", None),
+        (
+            "standard_name Concept, acoustic_...",
+            f"{system_uri}/standard_name/acoustic_signal_roundtrip_travel_time_in_sea_water/",
+            None,
+        ),
     ]
 
     extended_endpoints = [
         ("System home page, NVS Turtle", f"{system_uri}?_mediatype=text/turtle"),
-        ("Vocabularies, NVS Turtle", f"{system_uri}/collection/?_mediatype=text/turtle"),
+        (
+            "Vocabularies, NVS Turtle",
+            f"{system_uri}/collection/?_mediatype=text/turtle",
+        ),
         ("Thesauri, NVS Turtle", f"{system_uri}/scheme/?_mediatype=text/turtle"),
-        ("A Vocabulary, R19, NVS Turtle", f"{system_uri}/collection/R19/current/?_mediatype=text/turtle"),
-        ("A Thesaurus, WCATHES, NVS Turtle", f"{system_uri}/scheme/WCATHES/current/?_mediatype=text/turtle"),
-        ("A Concept, S0700046, NVS Turtle", f"{system_uri}/collection/S07/current/S0700046/?_mediatype=text/turtle"),
-        ("A Mapping, 337272, NVS Turtle", f"{system_uri}/mapping/I/337272/?_mediatype=text/turtle"),
-        ("standard_name Concept, acoustic_...",
-         f"{system_uri}/standard_name/acoustic_signal_roundtrip_travel_time_in_sea_water/?_mediatype=text/turtle"),
-        ("A PUV Concept, S0700046, NVS HTML", f"{system_uri}/collection/S07/current/S0700004/"),
-        ("A PUV Concept, S0700046, PUV HTML", f"{system_uri}/collection/S07/current/S0700004/?_profile=puv&_mediatype=text/html"),
-        ("A PUV Concept, S0700046, PUV Turtle",
-         f"{system_uri}/collection/S07/current/S0700004/?_profile=puv&_mediatype=text/turtle"),
+        (
+            "A Vocabulary, R19, NVS Turtle",
+            f"{system_uri}/collection/R19/current/?_mediatype=text/turtle",
+        ),
+        (
+            "A Thesaurus, WCATHES, NVS Turtle",
+            f"{system_uri}/scheme/WCATHES/current/?_mediatype=text/turtle",
+        ),
+        (
+            "A Concept, S0700046, NVS Turtle",
+            f"{system_uri}/collection/S07/current/S0700046/?_mediatype=text/turtle",
+        ),
+        (
+            "A Mapping, 337272, NVS Turtle",
+            f"{system_uri}/mapping/I/337272/?_mediatype=text/turtle",
+        ),
+        (
+            "standard_name Concept, acoustic_...",
+            f"{system_uri}/standard_name/acoustic_signal_roundtrip_travel_time_in_sea_water/?_mediatype=text/turtle",
+        ),
+        (
+            "A PUV Concept, S0700046, NVS HTML",
+            f"{system_uri}/collection/S07/current/S0700004/",
+        ),
+        (
+            "A PUV Concept, S0700046, PUV HTML",
+            f"{system_uri}/collection/S07/current/S0700004/?_profile=puv&_mediatype=text/html",
+        ),
+        (
+            "A PUV Concept, S0700046, PUV Turtle",
+            f"{system_uri}/collection/S07/current/S0700004/?_profile=puv&_mediatype=text/turtle",
+        ),
     ]
 
     slow_endpoints = [

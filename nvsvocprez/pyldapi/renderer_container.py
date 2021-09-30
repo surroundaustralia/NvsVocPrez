@@ -4,20 +4,21 @@ from .data import RDF_MEDIATYPES
 
 
 class ContainerRenderer(Renderer):
-    def __init__(self,
-                 request,
-                 instance_uri,
-                 profiles=None,
-                 default_profile_token="mem",
-                 **kwargs
-                 ):
+    def __init__(
+        self,
+        request,
+        instance_uri,
+        profiles=None,
+        default_profile_token="mem",
+        **kwargs
+    ):
 
         contanno = Profile(
             uri="https://w3id.org/profile/contanno",
             id="contanno",
             label="Container Annotations",
             comment="Describes container annotations only, that is a veiw of a container object's properties"
-                    " other than its members.",
+            " other than its members.",
             mediatypes=["text/html"] + RDF_MEDIATYPES,
             default_mediatype="text/html",
             languages=["en"],
@@ -29,7 +30,7 @@ class ContainerRenderer(Renderer):
             id="mem",
             label="Members",
             comment="A very basic data model that lists the members of container objects only, i.e. not their other "
-                    "properties",
+            "properties",
             mediatypes=["text/html", "application/json"] + RDF_MEDIATYPES,
             default_mediatype="text/html",
             languages=["en"],
@@ -57,4 +58,6 @@ class ContainerRenderer(Renderer):
         elif self.profile == "mem":
             raise NotImplementedError("You must implement handling for the mem profile")
         elif self.profile == "contanno":
-            raise NotImplementedError("You must implement handling for the contanno profile")
+            raise NotImplementedError(
+                "You must implement handling for the contanno profile"
+            )

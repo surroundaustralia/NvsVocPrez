@@ -32,7 +32,7 @@ void = Profile(
     id="void",
     label="VoID",
     comment="The Vocabulary of Interlinked Datasets (VoID) is an RDF Schema vocabulary for expressing metadata about "
-            "RDF datasets.",
+    "RDF datasets.",
     mediatypes=RDF_MEDIATYPES,
     default_mediatype="text/turtle",
     languages=["en"],
@@ -56,8 +56,8 @@ dd = Profile(
     id="dd",
     label="Drop-Down List",
     comment="A simple data model to provide items for form drop-down lists. The basic information is an ID & name tuple "
-            "and the optional extra value is an item's parent. For vocabularies, this is then URI, prefLabel or URI, "
-            "prefLabel & broader Concept",
+    "and the optional extra value is an item's parent. For vocabularies, this is then URI, prefLabel or URI, "
+    "prefLabel & broader Concept",
     mediatypes=["application/json"],
     default_mediatype="application/json",
     languages=["en"],
@@ -69,7 +69,7 @@ nvs = Profile(
     id="nvs",
     label="NVS Collections List Profile",
     comment="The NERC Vocabulary Server's profile of SKOS that include Provenance Ontology (PROV) and Registry Ontology"
-            "relationships for term governance.",
+    "relationships for term governance.",
     mediatypes=["text/html"] + RDF_MEDIATYPES,
     default_mediatype="text/html",
     languages=["en"],
@@ -81,7 +81,7 @@ vocpub = Profile(
     id="vocpub",
     label="VocPub",
     comment="A profile of SKOS for the publication of Vocabularies. This profile mandates the use of one Concept "
-            "Scheme per vocabulary",
+    "Scheme per vocabulary",
     mediatypes=RDF_MEDIATYPES,
     default_mediatype="text/turtle",
     languages=["en"],
@@ -93,7 +93,7 @@ sdo = Profile(
     id="sdo",
     label="schema.org",
     comment="Schema.org is a collaborative, community activity with a mission to create, maintain, and promote schemas "
-            "for structured data on the Internet, on web pages, in email messages, and beyond.",
+    "for structured data on the Internet, on web pages, in email messages, and beyond.",
     mediatypes=RDF_MEDIATYPES,
     default_mediatype="text/turtle",
     languages=["en"],
@@ -105,7 +105,7 @@ puv = Profile(
     id="puv",
     label="Parameter Use Vocabulary",
     comment="A simple ontology which implements the Parameter Usage Vocabulary semantic model, as described at "
-            "https://github.com/nvs-vocabs/P01",
+    "https://github.com/nvs-vocabs/P01",
     mediatypes=["text/html"] + RDF_MEDIATYPES,
     default_mediatype="text/html",
     languages=["en"],

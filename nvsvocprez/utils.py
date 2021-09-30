@@ -4,6 +4,7 @@ import httpx
 import config
 import pickle
 from pathlib import Path
+
 api_home_dir = Path(__file__).parent
 collections_pickle = Path(api_home_dir / "cache" / "collections.pickle")
 conceptschemes_pickle = Path(api_home_dir / "cache" / "conceptschemes.pickle")
@@ -19,7 +20,7 @@ def sparql_query(query: str):
         data=query,
         headers={"Content-Type": "application/sparql-query"},
         auth=(config.SPARQL_USERNAME, config.SPARQL_PASSWORD),
-        timeout=60.0
+        timeout=60.0,
     )
     if 200 <= r.status_code < 300:
         return True, r.json()["results"]["bindings"]
@@ -33,7 +34,7 @@ def sparql_construct(query: str, rdf_mediatype="text/turtle"):
         data=query,
         headers={"Content-Type": "application/sparql-query", "Accept": rdf_mediatype},
         auth=(config.SPARQL_USERNAME, config.SPARQL_PASSWORD),
-        timeout=60.0
+        timeout=60.0,
     )
     if 200 <= r.status_code < 300:
         return True, r.content
@@ -49,7 +50,11 @@ def cache_clear():
         conceptschemes_pickle.unlink()
 
 
-def cache_fill(collections_or_conceptschemes_or_both: Literal["collections", "conceptschemes", "both"] = "both"):
+def cache_fill(
+    collections_or_conceptschemes_or_both: Literal[
+        "collections", "conceptschemes", "both"
+    ] = "both"
+):
     logging.debug(f"filled cache {collections_or_conceptschemes_or_both}")
     if not Path(api_home_dir / "cache").is_dir():
         Path(api_home_dir / "cache").mkdir()
@@ -141,7 +146,9 @@ def cache_fill(collections_or_conceptschemes_or_both: Literal["collections", "co
         pass
 
 
-def cache_return(collections_or_conceptschemes: Literal["collections", "conceptschemes"]) -> dict:
+def cache_return(
+    collections_or_conceptschemes: Literal["collections", "conceptschemes"]
+) -> dict:
     if collections_or_conceptschemes == "collections":
         if not collections_pickle.is_file():
             cache_fill(collections_or_conceptschemes_or_both="collections")
@@ -210,4 +217,7 @@ def render_concept_tree(html_doc):
 
 
 def get_accepts(accept_header: str):
-    return [accept.split(";")[0].replace("*/*", "text/html") for accept in accept_header.split(",")]
+    return [
+        accept.split(";")[0].replace("*/*", "text/html")
+        for accept in accept_header.split(",")
+    ]

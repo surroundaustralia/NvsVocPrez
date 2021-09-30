@@ -4,7 +4,12 @@ from pathlib import Path
 import fastapi
 import uvicorn
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response, PlainTextResponse, JSONResponse
+from starlette.responses import (
+    RedirectResponse,
+    Response,
+    PlainTextResponse,
+    JSONResponse,
+)
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
@@ -22,12 +27,16 @@ from profiles import Profile
 api_home_dir = Path(__file__).parent
 api = fastapi.FastAPI()
 templates = Jinja2Templates(str(api_home_dir / "view" / "templates"))
-api.mount("/static", StaticFiles(directory=str(api_home_dir / "view" / "static")), name="static")
+api.mount(
+    "/static",
+    StaticFiles(directory=str(api_home_dir / "view" / "static")),
+    name="static",
+)
 logging.basicConfig(level=logging.DEBUG)
 acc_dep_map = {
     "accepted": '?c <http://www.w3.org/2002/07/owl#deprecated> "false" .',
     "deprecated": '?c <http://www.w3.org/2002/07/owl#deprecated> "true" .',
-    None: ""
+    None: "",
 }
 
 
@@ -40,12 +49,14 @@ def index(request: Request):
         def __init__(self):
             self.instance_uri = str(request.base_url)
             self.label = "NERC Vocabulary Server Content"
-            self.comment = "The NVS gives access to standardised and hierarchically-organized vocabularies. It is " \
-                           "managed by the British Oceanographic Data Centre at the National Oceanography Centre " \
-                           "(NOC) in Liverpool and Southampton, and receives funding from the Natural Environment " \
-                           "Research Council (NERC) in the United Kingdom. Major technical developments have also " \
-                           "been funded by European Union's projects notably the Open Service Network for Marine " \
-                           "Environmental Data (NETMAR) programme, and the SeaDataNet and SeaDataCloud projects."
+            self.comment = (
+                "The NVS gives access to standardised and hierarchically-organized vocabularies. It is "
+                "managed by the British Oceanographic Data Centre at the National Oceanography Centre "
+                "(NOC) in Liverpool and Southampton, and receives funding from the Natural Environment "
+                "Research Council (NERC) in the United Kingdom. Major technical developments have also "
+                "been funded by European Union's projects notably the Open Service Network for Marine "
+                "Environmental Data (NETMAR) programme, and the SeaDataNet and SeaDataCloud projects."
+            )
             super().__init__(
                 request,
                 self.instance_uri,
@@ -56,36 +67,40 @@ def index(request: Request):
         def render(self):
             if self.profile == "dcat":
                 if self.mediatype == "text/html":
-                    return templates.TemplateResponse("index.html", {"request": request})
+                    return templates.TemplateResponse(
+                        "index.html", {"request": request}
+                    )
                 else:  # all other formats are RDF
                     if self.mediatype == "text/turtle":
                         return Response(
                             open(dcat_file).read().replace("xxx", self.instance_uri),
-                            headers={"Content-Type": "text/turtle"}
+                            headers={"Content-Type": "text/turtle"},
                         )
                     else:
                         g = Graph().parse(
-                            data=open(dcat_file).read().replace("xxx", self.instance_uri),
-                            format="turtle"
+                            data=open(dcat_file)
+                            .read()
+                            .replace("xxx", self.instance_uri),
+                            format="turtle",
                         )
                         return Response(
                             content=g.serialize(format=self.mediatype),
-                            headers={"Content-Type": self.mediatype}
+                            headers={"Content-Type": self.mediatype},
                         )
             elif self.profile == "sdo":
                 if self.mediatype == "text/turtle":
                     return Response(
                         open(sdo_file).read().replace("xxx", self.instance_uri),
-                        headers={"Content-Type": "text/turtle"}
+                        headers={"Content-Type": "text/turtle"},
                     )
                 else:
                     g = Graph().parse(
                         data=open(sdo_file).read().replace("xxx", self.instance_uri),
-                        format="turtle"
+                        format="turtle",
                     )
                     return Response(
                         content=g.serialize(format=self.mediatype),
-                        headers={"Content-Type": self.mediatype}
+                        headers={"Content-Type": self.mediatype},
                     )
 
             alt = super().render()
@@ -101,11 +116,13 @@ def collections(request: Request):
         def __init__(self):
             self.instance_uri = str(request.url).split("?")[0]
             self.label = "NVS Vocabularies"
-            self.comment = "SKOS concept collections held in the NERC Vocabulary Server. A concept collection " \
-                           "is useful where a group of concepts shares something in common, and it is convenient " \
-                           "to group them under a common label. In the NVS, concept collections are synonymous " \
-                           "with controlled vocabularies or code lists. Each collection is associated with its " \
-                           "governance body. An external website link is displayed when applicable."
+            self.comment = (
+                "SKOS concept collections held in the NERC Vocabulary Server. A concept collection "
+                "is useful where a group of concepts shares something in common, and it is convenient "
+                "to group them under a common label. In the NVS, concept collections are synonymous "
+                "with controlled vocabularies or code lists. Each collection is associated with its "
+                "governance body. An external website link is displayed when applicable."
+            )
             super().__init__(
                 request,
                 self.instance_uri,
@@ -116,16 +133,25 @@ def collections(request: Request):
         def render(self):
             if self.profile == "nvs":
                 if self.mediatype == "text/html":
-                    collections = cache_return(collections_or_conceptschemes="collections")
+                    collections = cache_return(
+                        collections_or_conceptschemes="collections"
+                    )
 
                     if request.query_params.get("filter"):
-                        def concat_vocab_fields(vocab):
-                            return f"{vocab['id']['value']}" \
-                                   f"{vocab['prefLabel']['value']}" \
-                                   f"{vocab['description']['value']}"
 
-                        collections = [x for x in collections if
-                                       request.query_params.get("filter") in concat_vocab_fields(x)]
+                        def concat_vocab_fields(vocab):
+                            return (
+                                f"{vocab['id']['value']}"
+                                f"{vocab['prefLabel']['value']}"
+                                f"{vocab['description']['value']}"
+                            )
+
+                        collections = [
+                            x
+                            for x in collections
+                            if request.query_params.get("filter")
+                            in concat_vocab_fields(x)
+                        ]
 
                     return templates.TemplateResponse(
                         "collections.html",
@@ -136,7 +162,7 @@ def collections(request: Request):
                             "comment": self.comment,
                             "collections": collections,
                             "profile_token": self.profile,
-                        }
+                        },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
                     q = """
@@ -197,15 +223,17 @@ def collections(request: Request):
                     else:
                         return PlainTextResponse(
                             "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500
+                            status_code=500,
                         )
             elif self.profile == "mem":
                 collections = []
                 for c in cache_return(collections_or_conceptschemes="collections"):
-                    collections.append({
-                        "uri": c["uri"]["value"],
-                        "systemUri": c["systemUri"]["value"],
-                        "label": c["prefLabel"]["value"]}
+                    collections.append(
+                        {
+                            "uri": c["uri"]["value"],
+                            "systemUri": c["systemUri"]["value"],
+                            "label": c["prefLabel"]["value"],
+                        }
                     )
 
                 if self.mediatype == "text/html":
@@ -217,10 +245,12 @@ def collections(request: Request):
                             "label": self.label,
                             "collections": collections,
                             "profile_token": "nvs",
-                        }
+                        },
                     )
                 elif self.mediatype == "application/json":
-                    return [{"uri": c["uri"], "label": c["prefLabel"]} for c in collections]
+                    return [
+                        {"uri": c["uri"], "label": c["prefLabel"]} for c in collections
+                    ]
                 else:  # all other available mediatypes are RDF
                     g = Graph()
                     container = URIRef(self.instance_uri)
@@ -230,8 +260,7 @@ def collections(request: Request):
                         g.add((container, RDFS.member, URIRef(c["uri"])))
                         g.add((URIRef(c["uri"]), RDFS.label, RdfLiteral(c["label"])))
                     return Response(
-                        g.serialize(format=self.mediatype),
-                        media_type=self.mediatype
+                        g.serialize(format=self.mediatype), media_type=self.mediatype
                     )
             elif self.profile == "contanno":
                 if self.mediatype == "text/html":
@@ -243,20 +272,21 @@ def collections(request: Request):
                             "label": self.label,
                             "comment": self.comment,
                             "profile_token": "nvs",
-                        }
+                        },
                     )
                 else:  # all other available mediatypes are RDF
                     g = Graph()
                     container = URIRef(self.instance_uri)
                     g.add((container, RDF.type, RDF.Bag))
                     g.add((container, RDFS.label, RdfLiteral(self.label)))
-                    c = "This object is a container that contains a number of members. See other profiles of this " \
+                    c = (
+                        "This object is a container that contains a number of members. See other profiles of this "
                         "object to see those members."
+                    )
                     c += self.comment
                     g.add((container, RDFS.comment, RdfLiteral(c)))
                     return Response(
-                        g.serialize(format=self.mediatype),
-                        media_type=self.mediatype
+                        g.serialize(format=self.mediatype), media_type=self.mediatype
                     )
 
             alt = super().render()
@@ -272,11 +302,13 @@ def conceptschemes(request: Request):
         def __init__(self):
             self.instance_uri = str(request.url).split("?")[0]
             self.label = "NVS Thesauri"
-            self.comment = "SKOS concept schemes managed by the NERC Vocabulary Server. A concept scheme can be " \
-                           "viewed as an aggregation of one or more SKOS concepts. Semantic relationships (links) " \
-                           "between those concepts may also be viewed as part of a concept scheme. A concept scheme " \
-                           "is therefore useful for containing the concepts registered in multiple concept " \
-                           "collections that relate to each other as a single semantic unit, such as a thesaurus."
+            self.comment = (
+                "SKOS concept schemes managed by the NERC Vocabulary Server. A concept scheme can be "
+                "viewed as an aggregation of one or more SKOS concepts. Semantic relationships (links) "
+                "between those concepts may also be viewed as part of a concept scheme. A concept scheme "
+                "is therefore useful for containing the concepts registered in multiple concept "
+                "collections that relate to each other as a single semantic unit, such as a thesaurus."
+            )
             super().__init__(
                 request,
                 str(request.url).split("?")[0],
@@ -287,16 +319,25 @@ def conceptschemes(request: Request):
         def render(self):
             if self.profile == "nvs":
                 if self.mediatype == "text/html":
-                    conceptschemes = cache_return(collections_or_conceptschemes="conceptschemes")
+                    conceptschemes = cache_return(
+                        collections_or_conceptschemes="conceptschemes"
+                    )
 
                     if request.query_params.get("filter"):
-                        def concat_vocab_fields(vocab):
-                            return f"{vocab['id']['value']}" \
-                                   f"{vocab['prefLabel']['value']}" \
-                                   f"{vocab['description']['value']}"
 
-                        conceptschemes = [x for x in conceptschemes if
-                                       request.query_params.get("filter") in concat_vocab_fields(x)]
+                        def concat_vocab_fields(vocab):
+                            return (
+                                f"{vocab['id']['value']}"
+                                f"{vocab['prefLabel']['value']}"
+                                f"{vocab['description']['value']}"
+                            )
+
+                        conceptschemes = [
+                            x
+                            for x in conceptschemes
+                            if request.query_params.get("filter")
+                            in concat_vocab_fields(x)
+                        ]
 
                     return templates.TemplateResponse(
                         "conceptschemes.html",
@@ -307,7 +348,7 @@ def conceptschemes(request: Request):
                             "comment": self.comment,
                             "conceptschemes": conceptschemes,
                             "profile_token": "nvs",
-                        }
+                        },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
                     q = """
@@ -358,15 +399,17 @@ def conceptschemes(request: Request):
                     else:
                         return PlainTextResponse(
                             "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500
+                            status_code=500,
                         )
             elif self.profile == "mem":
                 collections = []
                 for c in cache_return(collections_or_conceptschemes="conceptschemes"):
-                    collections.append({
-                        "uri": c["uri"]["value"],
-                        "systemUri": c["systemUri"]["value"],
-                        "label": c["prefLabel"]["value"]}
+                    collections.append(
+                        {
+                            "uri": c["uri"]["value"],
+                            "systemUri": c["systemUri"]["value"],
+                            "label": c["prefLabel"]["value"],
+                        }
                     )
 
                 if self.mediatype == "text/html":
@@ -378,10 +421,12 @@ def conceptschemes(request: Request):
                             "label": self.label,
                             "collections": collections,
                             "profile_token": "nvs",
-                        }
+                        },
                     )
                 elif self.mediatype == "application/json":
-                    return [{"uri": c["uri"], "label": c["prefLabel"]} for c in collections]
+                    return [
+                        {"uri": c["uri"], "label": c["prefLabel"]} for c in collections
+                    ]
                 else:  # all other available mediatypes are RDF
                     g = Graph()
                     container = URIRef(self.instance_uri)
@@ -391,8 +436,7 @@ def conceptschemes(request: Request):
                         g.add((container, RDFS.member, URIRef(c["uri"])))
                         g.add((URIRef(c["uri"]), RDFS.label, RdfLiteral(c["label"])))
                     return Response(
-                        g.serialize(format=self.mediatype),
-                        media_type=self.mediatype
+                        g.serialize(format=self.mediatype), media_type=self.mediatype
                     )
             elif self.profile == "contanno":
                 if self.mediatype == "text/html":
@@ -404,20 +448,21 @@ def conceptschemes(request: Request):
                             "label": self.label,
                             "comment": self.comment,
                             "profile_token": "nvs",
-                        }
+                        },
                     )
                 else:  # all other available mediatypes are RDF
                     g = Graph()
                     container = URIRef(self.instance_uri)
                     g.add((container, RDF.type, RDF.Bag))
                     g.add((container, RDFS.label, RdfLiteral(self.label)))
-                    c = "This object is a container that contains a number of members. See other profiles of this " \
+                    c = (
+                        "This object is a container that contains a number of members. See other profiles of this "
                         "object to see those members."
+                    )
                     c += self.comment
                     g.add((container, RDFS.comment, RdfLiteral(c)))
                     return Response(
-                        g.serialize(format=self.mediatype),
-                        media_type=self.mediatype
+                        g.serialize(format=self.mediatype), media_type=self.mediatype
                     )
             alt = super().render()
             if alt is not None:
@@ -434,11 +479,7 @@ def collection_no_current(request: Request, collection_id):
 
 @api.get("/collection/{collection_id}/current/")
 @api.get("/collection/{collection_id}/current/{acc_dep_or_concept}/")
-def collection(
-        request: Request,
-        collection_id,
-        acc_dep_or_concept: str = None
-):
+def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
     if acc_dep_or_concept not in ["accepted", "deprecated", None]:
         # this is a call for a Concept
         return concept(request)
@@ -447,22 +488,20 @@ def collection(
         def __init__(self):
             self.instance_uri = f"{DATA_URI}/collection/{collection_id}/current/"
 
-            profiles = {
-                    "nvs": nvs,
-                    "skos": skos,
-                    "vocpub": vocpub,
-                    "dd": dd
-                }
+            profiles = {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd}
             for collection in cache_return(collections_or_conceptschemes="collections"):
                 if collection["id"]["value"] == collection_id:
                     if collection.get("conforms_to"):
-                        if collection["conforms_to"]["value"] == "https://w3id.org/env/puv":
+                        if (
+                            collection["conforms_to"]["value"]
+                            == "https://w3id.org/env/puv"
+                        ):
                             p = Profile(
                                 uri="https://w3id.org/env/puv",
                                 id="puv",
                                 label="Parameter Use Vocabulary",
                                 comment="A simple ontology which implements the Parameter Usage Vocabulary semantic model, as described at "
-                                        "https://github.com/nvs-vocabs/P01",
+                                "https://github.com/nvs-vocabs/P01",
                                 mediatypes=RDF_MEDIATYPES,
                                 default_mediatype="text/turtle",
                                 languages=["en"],
@@ -504,7 +543,11 @@ def collection(
                         FILTER(lang(?def) = "en" || lang(?def) = "")                    
                 }
                 ORDER BY ?pl
-                """.replace("xxx", self.instance_uri).replace("acc_dep", acc_dep_map.get(acc_dep_or_concept))
+                """.replace(
+                "xxx", self.instance_uri
+            ).replace(
+                "acc_dep", acc_dep_map.get(acc_dep_or_concept)
+            )
 
             sparql_result = sparql_query(q)
             if sparql_result[0]:
@@ -516,7 +559,9 @@ def collection(
                         "prefLabel": concept["pl"]["value"].replace("_", " "),
                         "definition": concept["def"]["value"].replace("_", "_ "),
                         "date": concept["date"]["value"][0:10],
-                        "deprecated": True if concept.get("dep") and concept["dep"]["value"] == "true" else False
+                        "deprecated": True
+                        if concept.get("dep") and concept["dep"]["value"] == "true"
+                        else False,
                     }
                     for concept in sparql_result[1]
                 ]
@@ -537,7 +582,7 @@ def collection(
                                 "title": "DB Error",
                                 "status": "500",
                                 "message": "There was an error with accessing the Triplestore",
-                            }
+                            },
                         )
 
                     return templates.TemplateResponse(
@@ -547,7 +592,7 @@ def collection(
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": self.profile,
-                        }
+                        },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
                     q = """
@@ -582,14 +627,16 @@ def collection(
                           
                           FILTER (!STRSTARTS(STR(?p2), "https://w3id.org/env/puv#"))
                         }
-                        """.replace("xxx", self.instance_uri)
+                        """.replace(
+                        "xxx", self.instance_uri
+                    )
                     r = sparql_construct(q, self.mediatype)
                     if r[0]:
                         return Response(r[1], headers={"Content-Type": self.mediatype})
                     else:
                         return PlainTextResponse(
                             "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500
+                            status_code=500,
                         )
             elif self.profile == "dd":
                 q = """
@@ -601,12 +648,16 @@ def collection(
                         ?c skos:prefLabel ?pl .
                     }
                     ORDER BY ?pl                
-                    """.replace("xxx", self.instance_uri)
+                    """.replace(
+                    "xxx", self.instance_uri
+                )
                 r = sparql_query(q)
-                return JSONResponse([
-                    {"uri": x["c"]["value"], "prefLabel": x["pl"]["value"]}
-                    for x in r[1]
-                ])
+                return JSONResponse(
+                    [
+                        {"uri": x["c"]["value"], "prefLabel": x["pl"]["value"]}
+                        for x in r[1]
+                    ]
+                )
             elif self.profile == "skos":
                 q = """
                     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                    
@@ -627,14 +678,16 @@ def collection(
                         ?c skos:prefLabel ?c_pl .
                     }
                     ORDER BY ?prefLabel
-                    """.replace("xxx", self.instance_uri)
+                    """.replace(
+                    "xxx", self.instance_uri
+                )
                 r = sparql_construct(q, self.mediatype)
                 if r[0]:
                     return Response(r[1], headers={"Content-Type": self.mediatype})
                 else:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
             elif self.profile == "vocpub":
                 q = """
@@ -663,7 +716,9 @@ def collection(
   
                         ?c skos:prefLabel ?c_pl .
                     }
-                    """.replace("xxx", self.instance_uri)
+                    """.replace(
+                    "xxx", self.instance_uri
+                )
 
                 r = sparql_construct(q, self.mediatype)
                 if r[0]:
@@ -671,7 +726,7 @@ def collection(
                 else:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
             elif self.profile == "puv":
                 # only RDF Media Types
@@ -706,14 +761,16 @@ def collection(
                         FILTER ( ?p2 != skos:narrowerTransitive )
                       }
                     }
-                    """.replace("xxx", self.instance_uri)
+                    """.replace(
+                    "xxx", self.instance_uri
+                )
                 r = sparql_construct(q, self.mediatype)
                 if r[0]:
                     return Response(r[1], headers={"Content-Type": self.mediatype})
                 else:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
 
             alt = super().render()
@@ -725,7 +782,9 @@ def collection(
 
 @api.get("/collection/{collection_id}/current/{acc_dep_or_concept}")
 def collection_concept_noslash(request: Request, collection_id, acc_dep_or_concept):
-    return RedirectResponse(url=f"/collection/{collection_id}/current/{acc_dep_or_concept}/")
+    return RedirectResponse(
+        url=f"/collection/{collection_id}/current/{acc_dep_or_concept}/"
+    )
 
 
 @api.get("/scheme/{scheme_id}")
@@ -737,9 +796,7 @@ def scheme_no_current(request: Request, scheme_id):
 @api.get("/scheme/{scheme_id}/current/")
 @api.get("/scheme/{scheme_id}/current/{acc_dep}/")
 def scheme(
-        request: Request,
-        scheme_id,
-        acc_dep: Literal["accepted", "deprecated", None] = None
+    request: Request, scheme_id, acc_dep: Literal["accepted", "deprecated", None] = None
 ):
     class SchemeRenderer(Renderer):
         def __init__(self):
@@ -748,12 +805,7 @@ def scheme(
             super().__init__(
                 request,
                 self.instance_uri,
-                {
-                    "nvs": nvs,
-                    "skos": skos,
-                    "vocpub": vocpub,
-                    "dd": dd
-                },
+                {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd},
                 "nvs",
             )
 
@@ -769,7 +821,9 @@ def scheme(
 
                 for d in data:
                     child = d["c"]["value"]
-                    parent = d["broader"]["value"] if d.get("broader") is not None else None
+                    parent = (
+                        d["broader"]["value"] if d.get("broader") is not None else None
+                    )
                     children_parents.append((child, parent))
                     labels[child] = d["pl"]["value"].replace("<", "&lt;")
 
@@ -794,12 +848,20 @@ def scheme(
                 html = ""
                 for k, v in hierarchy.items():
                     if v:
-                        html += f'<li><span class="caret"><a href="{k.replace(DATA_URI, "")}">{labels[k]}</a></span>' if k is not None else "None"
+                        html += (
+                            f'<li><span class="caret"><a href="{k.replace(DATA_URI, "")}">{labels[k]}</a></span>'
+                            if k is not None
+                            else "None"
+                        )
                         html += '<ul class="nested">'
                         html += make_nested_ul(v, labels)
                         html += "</ul>"
                     else:
-                        html += f'<li><a href="{k.replace(DATA_URI, "")}">{labels[k]}</a>' if k is not None else "None"
+                        html += (
+                            f'<li><a href="{k.replace(DATA_URI, "")}">{labels[k]}</a>'
+                            if k is not None
+                            else "None"
+                        )
                     html += "</li>"
                 return html
 
@@ -830,7 +892,11 @@ def scheme(
                   FILTER(lang(?pl) = "en" || lang(?pl) = "")                                    
                 }
                 ORDER BY ?pl
-                """.replace("xxx", self.instance_uri).replace("acc_dep", acc_dep_map.get(acc_dep))
+                """.replace(
+                "xxx", self.instance_uri
+            ).replace(
+                "acc_dep", acc_dep_map.get(acc_dep)
+            )
             try:
                 r = sparql_query(q)
 
@@ -839,9 +905,14 @@ def scheme(
                 else:
                     hier = make_hierarchical_dicts(r[1])
                     hier[1][None] = None
-                    return "<ul class=\"concept-hierarchy\">" + make_nested_ul(hier[0], hier[1])[23:-5]
+                    return (
+                        '<ul class="concept-hierarchy">'
+                        + make_nested_ul(hier[0], hier[1])[23:-5]
+                    )
             except RecursionError as e:
-                logging.warning("Encountered a recursion limit error for {}".format(self.vocab_uri))
+                logging.warning(
+                    "Encountered a recursion limit error for {}".format(self.vocab_uri)
+                )
                 # make a flat list of concepts
                 q = """
                     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -852,18 +923,24 @@ def scheme(
                         FILTER(lang(?pl) = "en" || lang(?pl) = "") 
                     }}
                     ORDER BY ?pl
-                    """.format(vocab_uri=self.instance_uri)
+                    """.format(
+                    vocab_uri=self.instance_uri
+                )
 
                 concepts = [
                     (concept["systemUri"]["value"], concept["pl"]["value"])
                     for concept in sparql_query(q)
                 ]
 
-                concepts_html = "<br />".join(["<a href=\"{}\">{}</a>".format(c[0], c[1]) for c in concepts])
+                concepts_html = "<br />".join(
+                    ['<a href="{}">{}</a>'.format(c[0], c[1]) for c in concepts]
+                )
                 return """<p><strong><em>This concept hierarchy cannot be displayed</em></strong><p>
                             <p>The flat list of all this Scheme's Concepts is:</p>
                             <p>{}</p>
-                        """.format(concepts_html)
+                        """.format(
+                    concepts_html
+                )
 
         def render(self):
             if self.profile == "nvs":
@@ -879,7 +956,7 @@ def scheme(
                                 "title": "DB Error",
                                 "status": "500",
                                 "message": "There was an error with accessing the Triplestore",
-                            }
+                            },
                         )
 
                     return templates.TemplateResponse(
@@ -889,7 +966,7 @@ def scheme(
                             "uri": self.instance_uri,
                             "scheme": scheme,
                             "profile_token": "nvs",
-                        }
+                        },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
                     q = """
@@ -945,15 +1022,18 @@ def scheme(
                             }                            
                         }
                         ORDER BY ?pl
-                        """.replace("xxx", self.instance_uri)\
-                        .replace("acc_dep", acc_dep_map.get(acc_dep))
+                        """.replace(
+                        "xxx", self.instance_uri
+                    ).replace(
+                        "acc_dep", acc_dep_map.get(acc_dep)
+                    )
                     r = sparql_construct(q, self.mediatype)
                     if r[0]:
                         return Response(r[1], headers={"Content-Type": self.mediatype})
                     else:
                         return PlainTextResponse(
                             "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500
+                            status_code=500,
                         )
             elif self.profile == "dd":
                 q = """
@@ -972,14 +1052,22 @@ def scheme(
                         FILTER(lang(?pl) = "en" || lang(?pl) = "")
                     }
                     ORDER BY ?pl                
-                    """.replace("xxx", self.instance_uri)
+                    """.replace(
+                    "xxx", self.instance_uri
+                )
                 r = sparql_query(q)
-                return JSONResponse([
-                    {"uri": x["c"]["value"], "prefLabel": x["pl"]["value"], "broader": x["b"]["value"]}
-                    if x.get("b") is not None
-                    else {"uri": x["c"]["value"], "prefLabel": x["pl"]["value"]}
-                    for x in r[1]
-                ])
+                return JSONResponse(
+                    [
+                        {
+                            "uri": x["c"]["value"],
+                            "prefLabel": x["pl"]["value"],
+                            "broader": x["b"]["value"],
+                        }
+                        if x.get("b") is not None
+                        else {"uri": x["c"]["value"], "prefLabel": x["pl"]["value"]}
+                        for x in r[1]
+                    ]
+                )
             elif self.profile == "skos":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -1035,14 +1123,16 @@ def scheme(
                         FILTER(lang(?c_def) = "en" || lang(?c_def) = "")
                     }
                     ORDER BY ?pl
-                    """.replace("xxx", self.instance_uri)
+                    """.replace(
+                    "xxx", self.instance_uri
+                )
                 r = sparql_construct(q, self.mediatype)
                 if r[0]:
                     return Response(r[1], headers={"Content-Type": self.mediatype})
                 else:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
             elif self.profile == "vocpub":
                 q = """
@@ -1109,7 +1199,9 @@ def scheme(
                         FILTER(lang(?c_def) = "en" || lang(?c_def) = "")
                     }
                     ORDER BY ?pl
-                    """.replace("xxx", self.instance_uri)
+                    """.replace(
+                    "xxx", self.instance_uri
+                )
 
                 r = sparql_construct(q, self.mediatype)
                 if r[0]:
@@ -1117,7 +1209,7 @@ def scheme(
                 else:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
 
             alt = super().render()
@@ -1147,12 +1239,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
             super().__init__(
                 request,
                 self.instance_uri,
-                {
-                    "nvs": nvs,
-                    "skos": skos,
-                    "vocpub": vocpub,
-                    "dd": dd
-                },
+                {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd},
                 "nvs",
             )
 
@@ -1185,8 +1272,11 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                         FILTER(lang(?def) = "en" || lang(?def) = "")
                 }
                 ORDER BY ?pl
-                """.replace("xxx", self.instance_uri)\
-                .replace("acc_dep", acc_dep_map.get(acc_dep_or_concept).replace("?c", "?x"))
+                """.replace(
+                "xxx", self.instance_uri
+            ).replace(
+                "acc_dep", acc_dep_map.get(acc_dep_or_concept).replace("?c", "?x")
+            )
 
             sparql_result = sparql_query(q)
             if sparql_result[0]:
@@ -1197,7 +1287,9 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                         "prefLabel": concept["pl"]["value"].replace("_", " "),
                         "definition": concept["def"]["value"].replace("_", "_ "),
                         "date": concept["date"]["value"][0:10],
-                        "deprecated": True if concept.get("dep") and concept["dep"]["value"] == "true" else False
+                        "deprecated": True
+                        if concept.get("dep") and concept["dep"]["value"] == "true"
+                        else False,
                     }
                     for concept in sparql_result[1]
                 ]
@@ -1218,7 +1310,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                                 "title": "DB Error",
                                 "status": "500",
                                 "message": "There was an error with accessing the Triplestore",
-                            }
+                            },
                         )
 
                     self.instance_uri = f"{DATA_URI}/standard_name/"
@@ -1230,7 +1322,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": "nvs",
-                        }
+                        },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
                     q = """
@@ -1270,14 +1362,16 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                           
                             BIND (IRI(CONCAT("DATA_URI/standard_name/", STR(?pl), "/")) AS ?m)
                         }
-                        """.replace("DATA_URI", DATA_URI)
+                        """.replace(
+                        "DATA_URI", DATA_URI
+                    )
                     r = sparql_construct(q, self.mediatype)
                     if r[0]:
                         return Response(r[1], headers={"Content-Type": self.mediatype})
                     else:
                         return PlainTextResponse(
                             "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500
+                            status_code=500,
                         )
             elif self.profile == "dd":
                 q = """
@@ -1292,12 +1386,18 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                         BIND (REPLACE(?xpl, "_", " ") AS ?pl)
                     }
                     ORDER BY ?pl                
-                    """.replace("xxx", self.instance_uri).replace("DATA_URI", DATA_URI)
+                    """.replace(
+                    "xxx", self.instance_uri
+                ).replace(
+                    "DATA_URI", DATA_URI
+                )
                 r = sparql_query(q)
-                return JSONResponse([
-                    {"uri": x["c"]["value"], "prefLabel": x["pl"]["value"]}
-                    for x in r[1]
-                ])
+                return JSONResponse(
+                    [
+                        {"uri": x["c"]["value"], "prefLabel": x["pl"]["value"]}
+                        for x in r[1]
+                    ]
+                )
             elif self.profile == "skos":
                 q = """
                     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>                    
@@ -1321,14 +1421,18 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                         BIND (REPLACE(?xc_pl, "_", " ") AS ?c_pl)                        
                     }
                     ORDER BY ?prefLabel
-                    """.replace("xxx", self.instance_uri).replace("DATA_URI", DATA_URI)
+                    """.replace(
+                    "xxx", self.instance_uri
+                ).replace(
+                    "DATA_URI", DATA_URI
+                )
                 r = sparql_construct(q, self.mediatype)
                 if r[0]:
                     return Response(r[1], headers={"Content-Type": self.mediatype})
                 else:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
             elif self.profile == "vocpub":
                 q = """
@@ -1363,7 +1467,11 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                         BIND (STRDT(REPLACE(STRBEFORE(?date, "."), " ", "T"), xsd:dateTime) AS ?modified)
                     }
                     ORDER BY ?xc                    
-                    """.replace("xxx", self.instance_uri).replace("DATA_URI", DATA_URI)
+                    """.replace(
+                    "xxx", self.instance_uri
+                ).replace(
+                    "DATA_URI", DATA_URI
+                )
 
                 r = sparql_construct(q, self.mediatype)
                 if r[0]:
@@ -1371,7 +1479,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                 else:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
 
             self.instance_uri = f"{DATA_URI}/standard_name/"
@@ -1391,11 +1499,15 @@ class ConceptRenderer(Renderer):
     def __init__(self, request):
         self.request = request
         if "collection" in str(request.url):
-            self.instance_uri = f"{DATA_URI}/collection/" + \
-                                str(request.url).split("/collection/")[1].split("?")[0]
+            self.instance_uri = (
+                f"{DATA_URI}/collection/"
+                + str(request.url).split("/collection/")[1].split("?")[0]
+            )
         elif "standard_name" in str(request.url):
-            self.instance_uri = f"{DATA_URI}/standard_name/" + \
-                                str(request.url).split("/standard_name/")[1].split("?")[0]
+            self.instance_uri = (
+                f"{DATA_URI}/standard_name/"
+                + str(request.url).split("/standard_name/")[1].split("?")[0]
+            )
 
         concept_profiles = {
             "nvs": nvs,
@@ -1408,20 +1520,18 @@ class ConceptRenderer(Renderer):
             collection_uri = self.instance_uri.split("/current/")[0] + "/current/"
             for collection in cache_return(collections_or_conceptschemes="collections"):
                 if collection["uri"]["value"] == collection_uri:
-                    if collection.get("conforms_to") and \
-                            collection["conforms_to"]["value"] == "https://w3id.org/env/puv":
+                    if (
+                        collection.get("conforms_to")
+                        and collection["conforms_to"]["value"]
+                        == "https://w3id.org/env/puv"
+                    ):
                         return True
             return False
 
         if _is_collection_puv():
             concept_profiles["puv"] = puv
 
-        super().__init__(
-            request,
-            self.instance_uri,
-            concept_profiles,
-            "nvs"
-        )
+        super().__init__(request, self.instance_uri, concept_profiles, "nvs")
 
     def _render_nvs_or_puv_html(self):
         q = """
@@ -1452,12 +1562,16 @@ class ConceptRenderer(Renderer):
               OPTIONAL {?collection_uri skos:prefLabel ?x }
               BIND (COALESCE(?x, "Climate and Forecast Standard Names") AS ?collection_label)
             }         
-            """.replace("xxx", self.instance_uri).replace("DATA_URI", DATA_URI)
+            """.replace(
+            "xxx", self.instance_uri
+        ).replace(
+            "DATA_URI", DATA_URI
+        )
         r = sparql_query(q)
         if not r[0]:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500
+                status_code=500,
             )
 
         PAV = Namespace("http://purl.org/pav/")
@@ -1466,24 +1580,40 @@ class ConceptRenderer(Renderer):
 
         props = {
             str(PUV.analyticalMethod): {"label": "analytical method", "group": "puv"},
-            str(PUV.biologicalObject): {"label": "biological object of interest", "group": "puv"},
-            str(PUV.chemicalObject): {"label": "chemical object of interest", "group": "puv"},
-            str(PUV.dataProcessing): {"label": "data processing method", "group": "puv"},
+            str(PUV.biologicalObject): {
+                "label": "biological object of interest",
+                "group": "puv",
+            },
+            str(PUV.chemicalObject): {
+                "label": "chemical object of interest",
+                "group": "puv",
+            },
+            str(PUV.dataProcessing): {
+                "label": "data processing method",
+                "group": "puv",
+            },
             str(PUV.isComposedOf): {"label": "is composed of", "group": "puv"},
             str(PUV.matrix): {"label": "matrix", "group": "puv"},
-            str(PUV.matrixRelationship): {"label": "measurement-matrix relationship", "group": "puv"},
+            str(PUV.matrixRelationship): {
+                "label": "measurement-matrix relationship",
+                "group": "puv",
+            },
             str(PUV.method): {"label": "method", "group": "puv"},
             str(PUV.objectOfInterest): {"label": "object of interest", "group": "puv"},
-            str(PUV.physicalObject): {"label": "physical object of interest", "group": "puv"},
+            str(PUV.physicalObject): {
+                "label": "physical object of interest",
+                "group": "puv",
+            },
             str(PUV.property): {"label": "property", "group": "puv"},
-            str(PUV.samplePreparation): {"label": "sample-preparation method", "group": "puv"},
+            str(PUV.samplePreparation): {
+                "label": "sample-preparation method",
+                "group": "puv",
+            },
             str(PUV.statistic): {"label": "statistic", "group": "puv"},
             str(PUV.uom): {"label": "unit-of-measurement", "group": "puv"},
-
             str(DCTERMS.contributor): {"label": "Contributor", "group": "agent"},
             str(DCTERMS.creator): {"label": "Creator", "group": "agent"},
             str(DCTERMS.publisher): {"label": "Publisher", "group": "agent"},
-
             str(SKOS.notation): {"label": "Identifier", "group": "annotation"},
             # str(DCTERMS.identifier): {"label": "Identifier", "group": "annotation"},
             str(STATUS.status): {"label": "Status", "group": "annotation"},
@@ -1492,7 +1622,6 @@ class ConceptRenderer(Renderer):
             str(SKOS.scopeNote): {"label": "Scope Note", "group": "annotation"},
             str(SKOS.historyNote): {"label": "History Note", "group": "annotation"},
             str(SKOS.notation): {"label": "Identifier", "group": "annotation"},
-
             str(OWL.sameAs): {"label": "Same As", "group": "related"},
             str(SKOS.broader): {"label": "Broader", "group": "related"},
             str(SKOS.related): {"label": "Related", "group": "related"},
@@ -1501,14 +1630,18 @@ class ConceptRenderer(Renderer):
             str(SKOS.broadMatch): {"label": "Broad Match", "group": "related"},
             str(SKOS.closeMatch): {"label": "Close Match", "group": "related"},
             str(SKOS.narrowMatch): {"label": "Narrow Match", "group": "related"},
-
-            str(PAV.hasCurrentVersion): {"label": "Has Current Version", "group": "provenance"},
+            str(PAV.hasCurrentVersion): {
+                "label": "Has Current Version",
+                "group": "provenance",
+            },
             str(PAV.hasVersion): {"label": "Version", "group": "provenance"},
             str(OWL.deprecated): {"label": "Deprecated", "group": "provenance"},
-            str(PAV.previousVersion): {"label": "Previous Version", "group": "provenance"},
+            str(PAV.previousVersion): {
+                "label": "Previous Version",
+                "group": "provenance",
+            },
             str(DCTERMS.isVersionOf): {"label": "Is Version Of", "group": "provenance"},
             str(PAV.authoredOn): {"label": "Authored On", "group": "provenance"},
-
             str(DC.identifier): {"group": "ignore"},
             str(DCTERMS.identifier): {"group": "ignore"},
             str(VOID.inDataset): {"group": "ignore"},
@@ -1543,7 +1676,9 @@ class ConceptRenderer(Renderer):
             p = x["p"]["value"]
             o = x["o"]["value"]
             o_label = x["o_label"]["value"] if x.get("o_label") is not None else None
-            o_notation = x["o_notation"]["value"] if x.get("o_notation") is not None else None
+            o_notation = (
+                x["o_notation"]["value"] if x.get("o_notation") is not None else None
+            )
             context["collection_systemUri"] = x["collection_systemUri"]["value"]
             context["collection_label"] = x["collection_label"]["value"]
             if p == str(OWL.deprecated):
@@ -1559,9 +1694,13 @@ class ConceptRenderer(Renderer):
                 context["date"] = o.replace(" ", "T").rstrip(".0")
             elif p in props.keys():
                 if props[p]["group"] != "ignore":
-                    context[props[p]["group"]].append(DisplayProperty(p, props[p]["label"], o, o_label, o_notation))
+                    context[props[p]["group"]].append(
+                        DisplayProperty(p, props[p]["label"], o, o_label, o_notation)
+                    )
             else:
-                context["other"].append(DisplayProperty(p, make_predicate_label_from_uri(p), o, o_label))
+                context["other"].append(
+                    DisplayProperty(p, make_predicate_label_from_uri(p), o, o_label)
+                )
 
         def clean_prop_list_labels(prop_list):
             last_pred_html = None
@@ -1619,14 +1758,16 @@ class ConceptRenderer(Renderer):
                 # exclude PUV properties from NVS view
                 FILTER (!STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
             }        
-            """.replace("xxx", self.instance_uri)
+            """.replace(
+            "xxx", self.instance_uri
+        )
         r = sparql_construct(q, self.mediatype)
         if r[0]:
             return Response(r[1], headers={"Content-Type": self.mediatype})
         else:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500
+                status_code=500,
             )
 
     def _render_skos_rdf(self):
@@ -1644,14 +1785,16 @@ class ConceptRenderer(Renderer):
               FILTER (STRSTARTS(STR(?p), "http://www.w3.org/2004/02/skos/core#"))
               FILTER (STRSTARTS(STR(?p2), "http://www.w3.org/2004/02/skos/core#"))
             }
-            """.replace("xxx", self.instance_uri)
+            """.replace(
+            "xxx", self.instance_uri
+        )
         r = sparql_construct(q, self.mediatype)
         if r[0]:
             return Response(r[1], headers={"Content-Type": self.mediatype})
         else:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500
+                status_code=500,
             )
 
     def _render_vocpub_rdf(self):
@@ -1672,14 +1815,16 @@ class ConceptRenderer(Renderer):
 
               FILTER (!STRSTARTS(STR(?p2), "http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
             }
-            """.replace("xxx", self.instance_uri)
+            """.replace(
+            "xxx", self.instance_uri
+        )
         r = sparql_construct(q, self.mediatype)
         if r[0]:
             return Response(r[1], headers={"Content-Type": self.mediatype})
         else:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500
+                status_code=500,
             )
 
     def _render_sdo_rdf(self):
@@ -1724,14 +1869,16 @@ class ConceptRenderer(Renderer):
                 .
               }
             }            
-            """.replace("DATA_URI", DATA_URI)
+            """.replace(
+            "DATA_URI", DATA_URI
+        )
         r = sparql_construct(q, self.mediatype)
         if r[0]:
             return Response(r[1], headers={"Content-Type": self.mediatype})
         else:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500
+                status_code=500,
             )
 
     def _render_puv_rdf(self):
@@ -1746,19 +1893,24 @@ class ConceptRenderer(Renderer):
               # include only PUV properties
               FILTER (STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
             }
-            """.replace("xxx", self.instance_uri)
+            """.replace(
+            "xxx", self.instance_uri
+        )
         r = sparql_construct(q, self.mediatype)
         if r[0]:
             return Response(r[1], headers={"Content-Type": self.mediatype})
         else:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500
+                status_code=500,
             )
 
     def render(self):
         if self.profile == "nvs":
-            if self.mediatype in RDF_MEDIATYPES or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP:
+            if (
+                self.mediatype in RDF_MEDIATYPES
+                or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP
+            ):
                 return self._render_nvs_rdf()
             else:
                 return self._render_nvs_or_puv_html()
@@ -1769,7 +1921,10 @@ class ConceptRenderer(Renderer):
         elif self.profile == "sdo":
             return self._render_sdo_rdf()
         elif self.profile == "puv":
-            if self.mediatype in RDF_MEDIATYPES or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP:
+            if (
+                self.mediatype in RDF_MEDIATYPES
+                or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP
+            ):
                 return self._render_puv_rdf()
             else:
                 return self._render_nvs_or_puv_html()
@@ -1787,8 +1942,10 @@ def concept(request: Request):
 def mapping(request: Request):
     class MappingRenderer(Renderer):
         def __init__(self):
-            self.instance_uri = f"{DATA_URI}/mapping/" + \
-                                str(request.url).split("/mapping/")[1].split("?")[0]
+            self.instance_uri = (
+                f"{DATA_URI}/mapping/"
+                + str(request.url).split("/mapping/")[1].split("?")[0]
+            )
 
             super().__init__(request, self.instance_uri, {"nvs": nvs}, "nvs")
 
@@ -1796,7 +1953,7 @@ def mapping(request: Request):
             if "/I/" not in self.instance_uri and "/E/" not in self.instance_uri:
                 return PlainTextResponse(
                     'All requests for Mappings must contain either "I" or "E" in the URI',
-                    status_code=400
+                    status_code=400,
                 )
 
             if self.profile == "nvs":
@@ -1804,15 +1961,18 @@ def mapping(request: Request):
                 if not g:
                     return PlainTextResponse(
                         "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500
+                        status_code=500,
                     )
                 if len(g) == 0:
                     return PlainTextResponse(
                         "The URI you supplied for the Mapping does not exist",
-                        status_code=400
+                        status_code=400,
                     )
 
-                if self.mediatype in RDF_MEDIATYPES or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP:
+                if (
+                    self.mediatype in RDF_MEDIATYPES
+                    or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP
+                ):
                     return self._render_nvs_rdf(g)
                 else:
                     return self._render_nvs_html(g)
@@ -1880,7 +2040,7 @@ def mapping(request: Request):
                 "submitter_title": mapping.get("title"),
                 "submitter_name": mapping.get("name"),
                 "submitter_memberof": mapping.get("memberof"),
-                "profile_token": self.profile
+                "profile_token": self.profile,
             }
 
             return templates.TemplateResponse("mapping.html", context=context)
@@ -1900,9 +2060,10 @@ def well_known(request: Request):
 
 @api.get("/.well_known/void")
 def well_known_void(
-        request: Request,
-        _profile: Optional[AnyStr] = None,
-        _mediatype: Optional[AnyStr] = "text/turtle"):
+    request: Request,
+    _profile: Optional[AnyStr] = None,
+    _mediatype: Optional[AnyStr] = "text/turtle",
+):
 
     void_file = api_home_dir / "void.ttl"
 
@@ -1917,15 +2078,18 @@ def well_known_void(
 
         def render(self):
             if self.mediatype == "text/turtle":
-                return Response(open(void_file).read(), headers={"Content-Type": "text/turtle"})
+                return Response(
+                    open(void_file).read(), headers={"Content-Type": "text/turtle"}
+                )
             else:
                 from rdflib import Graph
+
                 logging.debug(f"media type: {self.mediatype}")
                 g = Graph().parse(void_file, format="turtle")
                 logging.debug(len(g))
                 return Response(
                     content=g.serialize(format=self.mediatype),
-                    headers={"Content-Type": self.mediatype}
+                    headers={"Content-Type": self.mediatype},
                 )
 
     return WkRenderer().render()
@@ -1948,7 +2112,9 @@ def sparql(request: Request):
         "text/csv",
         "text/tab-separated-values",
     ]
-    QUERY_RESPONSE_MEDIA_TYPES = ["text/html"] + SPARQL_RESPONSE_MEDIA_TYPES + RDF_MEDIATYPES
+    QUERY_RESPONSE_MEDIA_TYPES = (
+        ["text/html"] + SPARQL_RESPONSE_MEDIA_TYPES + RDF_MEDIATYPES
+    )
     accepts = get_accepts(request.headers["Accept"])
     accept = [x for x in accepts if x in QUERY_RESPONSE_MEDIA_TYPES][0]
     if accept == "text/html":
@@ -1983,7 +2149,9 @@ def _get_sparql_service_description(rdf_fmt="text/turtle"):
                 ]
             ]
         .
-    """.format(SYSTEM_URI + "/sparql")
+    """.format(
+        SYSTEM_URI + "/sparql"
+    )
     grf = Graph().parse(data=sd_ttl)
     if rdf_fmt in RDF_MEDIATYPES:
         return grf.serialize(format=rdf_fmt)
@@ -1994,39 +2162,36 @@ def _get_sparql_service_description(rdf_fmt="text/turtle"):
 
 
 def _sparql_query2(q, mimetype="application/json"):
-        """ Make a SPARQL query"""
-        from config import SPARQL_ENDPOINT, SPARQL_USERNAME, SPARQL_PASSWORD
-        import httpx
-        logging.debug("sparql_query2: {}".format(q))
-        data = q
+    """Make a SPARQL query"""
+    from config import SPARQL_ENDPOINT, SPARQL_USERNAME, SPARQL_PASSWORD
+    import httpx
 
-        headers = {
-            "Content-Type": "application/sparql-query",
-            "Accept": mimetype,
-            "Accept-Encoding": "UTF-8",
-        }
-        if SPARQL_USERNAME is not None and SPARQL_PASSWORD is not None:
-            auth = (SPARQL_USERNAME, SPARQL_PASSWORD)
-        else:
-            auth = None
+    logging.debug("sparql_query2: {}".format(q))
+    data = q
 
-        try:
-            logging.debug(
-                "endpoint={}\ndata={}\nheaders={}".format(
-                    SPARQL_ENDPOINT, data, headers
-                )
+    headers = {
+        "Content-Type": "application/sparql-query",
+        "Accept": mimetype,
+        "Accept-Encoding": "UTF-8",
+    }
+    if SPARQL_USERNAME is not None and SPARQL_PASSWORD is not None:
+        auth = (SPARQL_USERNAME, SPARQL_PASSWORD)
+    else:
+        auth = None
+
+    try:
+        logging.debug(
+            "endpoint={}\ndata={}\nheaders={}".format(SPARQL_ENDPOINT, data, headers)
+        )
+        if auth is not None:
+            r = httpx.post(
+                SPARQL_ENDPOINT, auth=auth, data=data, headers=headers, timeout=60
             )
-            if auth is not None:
-                r = httpx.post(
-                    SPARQL_ENDPOINT, auth=auth, data=data, headers=headers, timeout=60
-                )
-            else:
-                r = httpx.post(
-                    SPARQL_ENDPOINT, data=data, headers=headers, timeout=60
-                )
-            return r.content.decode()
-        except Exception as ex:
-            raise ex
+        else:
+            r = httpx.post(SPARQL_ENDPOINT, data=data, headers=headers, timeout=60)
+        return r.content.decode()
+    except Exception as ex:
+        raise ex
 
 
 @api.post("/sparql")
@@ -2069,7 +2234,7 @@ def endpoint_post(request: Request, query: str = fastapi.Form(...)):
         if query is None or len(query) < 5:
             return PlainTextResponse(
                 "Your POST request to the SPARQL endpoint must contain a 'query' parameter if form posting is used.",
-                status_code=400
+                status_code=400,
             )
     elif "application/sparql-query" in request.headers["content-type"]:
         """
@@ -2087,13 +2252,13 @@ def endpoint_post(request: Request, query: str = fastapi.Form(...)):
             return PlainTextResponse(
                 "Your POST request to this SPARQL endpoint must contain the query in plain text in the "
                 "POST body if the Content-Type 'application/sparql-query' is used.",
-                status_code=400
+                status_code=400,
             )
     else:
         return PlainTextResponse(
             "Your POST request to this SPARQL endpoint must either the 'application/x-www-form-urlencoded' or"
             "'application/sparql-query' ContentType.",
-            status_code=400
+            status_code=400,
         )
 
     try:
@@ -2101,7 +2266,7 @@ def endpoint_post(request: Request, query: str = fastapi.Form(...)):
             format_mimetype = "text/turtle"
             return Response(
                 _sparql_query2(query, request.headers["Accept"]),
-                media_type=format_mimetype
+                media_type=format_mimetype,
             )
         else:
             return Response(
@@ -2110,7 +2275,7 @@ def endpoint_post(request: Request, query: str = fastapi.Form(...)):
     except ValueError as e:
         return PlainTextResponse(
             "Input error for query {}.\n\nError message: {}".format(query, str(e)),
-            status_code=400
+            status_code=400,
         )
     except ConnectionError as e:
         return PlainTextResponse(str(e), status_code=500)
@@ -2118,61 +2283,63 @@ def endpoint_post(request: Request, query: str = fastapi.Form(...)):
 
 @api.get("/endpoint")
 def endpoint_get(request: Request):
-        if request.query_params.get("query") is not None:
-            # SPARQL GET request
-            """
-            https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-via-get
-            2.1.1 query via GET
-            Protocol clients may send protocol requests via the HTTP GET method. When using the GET method, clients must
-            URL percent encode all parameters and include them as query parameter strings with the names given above.
-            HTTP query string parameters must be separated with the ampersand (&) character. Clients may include the
-            query string parameters in any order.
-            The HTTP request MUST NOT include a message body.
-            """
-            query = request.query_params.get("query")
-            accepts = get_accepts(request.headers["Accept"])
-            if "CONSTRUCT" in query or "DESCRIBE" in query:
-                accept = [x for x in accepts if x in RDF_MEDIATYPES][0]
-                if accept is None:
-                    return PlainTextResponse(
-                        "Accept header must include at least on RDF Media Type:" + ", ".join(RDF_MEDIATYPES) + ".",
-                        status_code=400,
-                    )
-                return Response(
-                    _sparql_query2(query, mimetype=request.headers["Accept"]),
-                    media_type=accept,
-                    headers={
-                        "Content-Disposition":
-                            f'attachment; filename=query_result.{RDF_FILE_EXTS[accept]}'
-                    },
+    if request.query_params.get("query") is not None:
+        # SPARQL GET request
+        """
+        https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-via-get
+        2.1.1 query via GET
+        Protocol clients may send protocol requests via the HTTP GET method. When using the GET method, clients must
+        URL percent encode all parameters and include them as query parameter strings with the names given above.
+        HTTP query string parameters must be separated with the ampersand (&) character. Clients may include the
+        query string parameters in any order.
+        The HTTP request MUST NOT include a message body.
+        """
+        query = request.query_params.get("query")
+        accepts = get_accepts(request.headers["Accept"])
+        if "CONSTRUCT" in query or "DESCRIBE" in query:
+            accept = [x for x in accepts if x in RDF_MEDIATYPES][0]
+            if accept is None:
+                return PlainTextResponse(
+                    "Accept header must include at least on RDF Media Type:"
+                    + ", ".join(RDF_MEDIATYPES)
+                    + ".",
+                    status_code=400,
                 )
-            else:
-                return Response(_sparql_query2(query), media_type="application/sparql-results+json")
+            return Response(
+                _sparql_query2(query, mimetype=request.headers["Accept"]),
+                media_type=accept,
+                headers={
+                    "Content-Disposition": f"attachment; filename=query_result.{RDF_FILE_EXTS[accept]}"
+                },
+            )
         else:
-            # SPARQL Service Description
-            """
-            https://www.w3.org/TR/sparql11-service-description/#accessing
-            SPARQL services made available via the SPARQL Protocol should return a service description document at the
-            service endpoint when dereferenced using the HTTP GET operation without any query parameter strings
-            provided. This service description must be made available in an RDF serialization, may be embedded in
-            (X)HTML by way of RDFa, and should use content negotiation if available in other RDF representations.
-            """
+            return Response(
+                _sparql_query2(query), media_type="application/sparql-results+json"
+            )
+    else:
+        # SPARQL Service Description
+        """
+        https://www.w3.org/TR/sparql11-service-description/#accessing
+        SPARQL services made available via the SPARQL Protocol should return a service description document at the
+        service endpoint when dereferenced using the HTTP GET operation without any query parameter strings
+        provided. This service description must be made available in an RDF serialization, may be embedded in
+        (X)HTML by way of RDFa, and should use content negotiation if available in other RDF representations.
+        """
 
-            accepts = get_accepts(request.headers["Accept"])
-            if accepts[0] in ['application/sparql-results+json', 'text/html']:
-                # show the SPARQL query form
-                return RedirectResponse(url="/sparql")
-            else:
-                accept = [x for x in accepts if x in RDF_MEDIATYPES][0]
-                if accept is None:
-                    return PlainTextResponse(
-                        "Accept header must include at least on RDF Media Type:" + ", ".join(RDF_MEDIATYPES) + ".",
-                        status_code=400,
-                    )
-                return Response(
-                    _get_sparql_service_description(accept),
-                    media_type=accept
+        accepts = get_accepts(request.headers["Accept"])
+        if accepts[0] in ["application/sparql-results+json", "text/html"]:
+            # show the SPARQL query form
+            return RedirectResponse(url="/sparql")
+        else:
+            accept = [x for x in accepts if x in RDF_MEDIATYPES][0]
+            if accept is None:
+                return PlainTextResponse(
+                    "Accept header must include at least on RDF Media Type:"
+                    + ", ".join(RDF_MEDIATYPES)
+                    + ".",
+                    status_code=400,
                 )
+            return Response(_get_sparql_service_description(accept), media_type=accept)
 
 
 @api.get("/cache-clear")
