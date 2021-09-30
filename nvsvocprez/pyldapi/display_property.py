@@ -9,10 +9,6 @@ class DisplayProperty:
     ):
         self.predicate_html = f'<a href="{predicate_uri}">{predicate_label}</a>'
         if predicate_uri in ["http://purl.org/pav/hasCurrentVersion", "http://purl.org/pav/previousVersion", "http://purl.org/dc/terms/isVersionOf", "http://purl.org/pav/hasVersion"]:
-            related_col_uri = object_value.split("/current/")[0] + "/current/"
-            related_col_systemUri = (
-                "/collection/" + related_col_uri.split("/collection/")[1]
-            )
             related_systemUri = "/collection/" + object_value.split("/collection/")[1]
             self.object_html = (
                 f'<td colspan="2"><a href="{related_systemUri}">{object_value.split("/")[-2]}</a></td>'
