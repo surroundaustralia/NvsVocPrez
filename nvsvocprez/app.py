@@ -1890,6 +1890,15 @@ class ConceptRenderer(Renderer):
 
     def _render_puv_rdf(self):
         q = """
+            PREFIX dc: <http://purl.org/dc/terms/>
+            PREFIX dce: <http://purl.org/dc/elements/1.1/>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            PREFIX pav: <http://purl.org/pav/>
+            PREFIX prov: <https://www.w3.org/ns/prov#>
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX void: <http://rdfs.org/ns/void#>
+            
             PREFIX puv: <https://w3id.org/env/puv#>
             CONSTRUCT {
               <xxx> ?p ?o .
@@ -1898,7 +1907,7 @@ class ConceptRenderer(Renderer):
               <xxx> ?p ?o .
 
               # include only PUV properties
-              FILTER (STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
+              # FILTER (STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
             }
             """.replace(
             "xxx", self.instance_uri
