@@ -780,6 +780,11 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
     return CollectionRenderer().render()
 
 
+@api.get("/collection/{collection_id}/current/{concept_id}/{vnum}/")
+def concept_with_version(request: Request, collection_id, concept_id, vnum: int):
+    return concept(request)
+
+
 @api.get("/collection/{collection_id}/current/{acc_dep_or_concept}")
 def collection_concept_noslash(request: Request, collection_id, acc_dep_or_concept):
     return RedirectResponse(
@@ -1508,6 +1513,8 @@ class ConceptRenderer(Renderer):
                 f"{DATA_URI}/standard_name/"
                 + str(request.url).split("/standard_name/")[1].split("?")[0]
             )
+
+        print(self.instance_uri)
 
         concept_profiles = {
             "nvs": nvs,
