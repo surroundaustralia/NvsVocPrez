@@ -3,8 +3,7 @@ uvicorn
 httpx
 jinja2
 aiofiles
-git+https://github.com/RDFLib/rdflib.git@master#egg=rdflib
-git+https://github.com/RDFLib/rdflib-jsonld.git@master#egg=rdflib-jsonld
+rdflib==6.0.1
 connegp
 markdown
 python-multipart
