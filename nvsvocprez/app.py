@@ -36,6 +36,7 @@ logging.basicConfig(level=logging.DEBUG)
 acc_dep_map = {
     "accepted": '?c <http://www.w3.org/2002/07/owl#deprecated> "false" .',
     "deprecated": '?c <http://www.w3.org/2002/07/owl#deprecated> "true" .',
+    "all": "",
     None: "",
 }
 
@@ -496,7 +497,7 @@ def collection_no_current(request: Request, collection_id):
 @api.get("/collection/{collection_id}/current/")
 @api.get("/collection/{collection_id}/current/{acc_dep_or_concept}/")
 def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
-    if acc_dep_or_concept not in ["accepted", "deprecated", None]:
+    if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
         # this is a call for a Concept
         return concept(request)
 
@@ -801,7 +802,7 @@ def scheme_no_current(request: Request, scheme_id):
 @api.get("/scheme/{scheme_id}/current/")
 @api.get("/scheme/{scheme_id}/current/{acc_dep}/")
 def scheme(
-    request: Request, scheme_id, acc_dep: Literal["accepted", "deprecated", None] = None
+    request: Request, scheme_id, acc_dep: Literal["accepted", "deprecated", "all", None] = None
 ):
     class SchemeRenderer(Renderer):
         def __init__(self):
@@ -1224,7 +1225,7 @@ def scheme_concept_noslash(request: Request, scheme_id, acc_dep):
 @api.get("/standard_name/{acc_dep_or_concept}")
 @api.get("/standard_name/{acc_dep_or_concept}/")
 def standard_name(request: Request, acc_dep_or_concept: str = None):
-    if acc_dep_or_concept not in ["accepted", "deprecated", None]:
+    if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
         # this is a call for a Standard Name Concept
         return standard_name_concept(request, acc_dep_or_concept)
 
