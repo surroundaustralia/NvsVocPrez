@@ -130,6 +130,19 @@ def collections(request: Request):
                 "nvs",
             )
 
+        def _render_sparql_response_rdf(self, sparql_response):
+            if sparql_response[0]:
+                return Response(
+                    '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[
+                        1] if "xml" in self.mediatype else sparql_response[1],
+                    headers={"Content-Type": self.mediatype}
+                )
+            else:
+                return PlainTextResponse(
+                    "There was an error obtaining the Concept RDF from the Triplestore",
+                    status_code=500,
+                )
+
         def render(self):
             if self.profile == "nvs":
                 if self.mediatype == "text/html":
@@ -217,14 +230,7 @@ def collections(request: Request):
                             OPTIONAL { ?cs rdfs:seeAlso ?seeAlso }
                         }
                         """
-                    r = sparql_construct(q, self.mediatype)
-                    if r[0]:
-                        return Response(r[1], headers={"Content-Type": self.mediatype})
-                    else:
-                        return PlainTextResponse(
-                            "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500,
-                        )
+                    return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "mem":
                 collections = []
                 for c in cache_return(collections_or_conceptschemes="collections"):
@@ -260,7 +266,8 @@ def collections(request: Request):
                         g.add((container, RDFS.member, URIRef(c["uri"])))
                         g.add((URIRef(c["uri"]), RDFS.label, RdfLiteral(c["label"])))
                     return Response(
-                        g.serialize(format=self.mediatype), media_type=self.mediatype
+                        g.serialize(format=self.mediatype),
+                        media_type=self.mediatype
                     )
             elif self.profile == "contanno":
                 if self.mediatype == "text/html":
@@ -286,7 +293,8 @@ def collections(request: Request):
                     c += self.comment
                     g.add((container, RDFS.comment, RdfLiteral(c)))
                     return Response(
-                        g.serialize(format=self.mediatype), media_type=self.mediatype
+                        g.serialize(format=self.mediatype),
+                        media_type=self.mediatype
                     )
 
             alt = super().render()
@@ -315,6 +323,19 @@ def conceptschemes(request: Request):
                 {"nvs": nvs},
                 "nvs",
             )
+
+        def _render_sparql_response_rdf(self, sparql_response):
+            if sparql_response[0]:
+                return Response(
+                    '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[1]
+                    if "xml" in self.mediatype else sparql_response[1],
+                    headers={"Content-Type": self.mediatype}
+                )
+            else:
+                return PlainTextResponse(
+                    "There was an error obtaining the Concept RDF from the Triplestore",
+                    status_code=500,
+                )
 
         def render(self):
             if self.profile == "nvs":
@@ -393,14 +414,7 @@ def conceptschemes(request: Request):
                             }
                         }
                         """
-                    r = sparql_construct(q, self.mediatype)
-                    if r[0]:
-                        return Response(r[1], headers={"Content-Type": self.mediatype})
-                    else:
-                        return PlainTextResponse(
-                            "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500,
-                        )
+                    return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "mem":
                 collections = []
                 for c in cache_return(collections_or_conceptschemes="conceptschemes"):
@@ -436,7 +450,8 @@ def conceptschemes(request: Request):
                         g.add((container, RDFS.member, URIRef(c["uri"])))
                         g.add((URIRef(c["uri"]), RDFS.label, RdfLiteral(c["label"])))
                     return Response(
-                        g.serialize(format=self.mediatype), media_type=self.mediatype
+                        g.serialize(format=self.mediatype),
+                        media_type=self.mediatype
                     )
             elif self.profile == "contanno":
                 if self.mediatype == "text/html":
@@ -462,7 +477,8 @@ def conceptschemes(request: Request):
                     c += self.comment
                     g.add((container, RDFS.comment, RdfLiteral(c)))
                     return Response(
-                        g.serialize(format=self.mediatype), media_type=self.mediatype
+                        g.serialize(format=self.mediatype),
+                        media_type=self.mediatype
                     )
             alt = super().render()
             if alt is not None:
@@ -515,6 +531,19 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                 profiles,
                 "nvs",
             )
+
+        def _render_sparql_response_rdf(self, sparql_response):
+            if sparql_response[0]:
+                return Response(
+                    '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[1]
+                    if "xml" in self.mediatype else sparql_response[1],
+                    headers={"Content-Type": self.mediatype}
+                )
+            else:
+                return PlainTextResponse(
+                    "There was an error obtaining the Concept RDF from the Triplestore",
+                    status_code=500,
+                )
 
         def _get_collection(self):
             for collection in cache_return(collections_or_conceptschemes="collections"):
@@ -630,14 +659,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                         """.replace(
                         "xxx", self.instance_uri
                     )
-                    r = sparql_construct(q, self.mediatype)
-                    if r[0]:
-                        return Response(r[1], headers={"Content-Type": self.mediatype})
-                    else:
-                        return PlainTextResponse(
-                            "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500,
-                        )
+                    return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "dd":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -681,14 +703,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                     """.replace(
                     "xxx", self.instance_uri
                 )
-                r = sparql_construct(q, self.mediatype)
-                if r[0]:
-                    return Response(r[1], headers={"Content-Type": self.mediatype})
-                else:
-                    return PlainTextResponse(
-                        "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500,
-                    )
+                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "vocpub":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -719,15 +734,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                     """.replace(
                     "xxx", self.instance_uri
                 )
-
-                r = sparql_construct(q, self.mediatype)
-                if r[0]:
-                    return Response(r[1], headers={"Content-Type": self.mediatype})
-                else:
-                    return PlainTextResponse(
-                        "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500,
-                    )
+                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "puv":
                 # only RDF Media Types
                 q = """
@@ -764,14 +771,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                     """.replace(
                     "xxx", self.instance_uri
                 )
-                r = sparql_construct(q, self.mediatype)
-                if r[0]:
-                    return Response(r[1], headers={"Content-Type": self.mediatype})
-                else:
-                    return PlainTextResponse(
-                        "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500,
-                    )
+                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
             alt = super().render()
             if alt is not None:
@@ -813,6 +813,19 @@ def scheme(
                 {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd},
                 "nvs",
             )
+
+        def _render_sparql_response_rdf(self, sparql_response):
+            if sparql_response[0]:
+                return Response(
+                    '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[1]
+                    if "xml" in self.mediatype else sparql_response[1],
+                    headers={"Content-Type": self.mediatype}
+                )
+            else:
+                return PlainTextResponse(
+                    "There was an error obtaining the Concept RDF from the Triplestore",
+                    status_code=500,
+                )
 
         def _get_scheme(self):
             for scheme in cache_return(collections_or_conceptschemes="conceptschemes"):
@@ -1032,14 +1045,7 @@ def scheme(
                     ).replace(
                         "acc_dep", acc_dep_map.get(acc_dep)
                     )
-                    r = sparql_construct(q, self.mediatype)
-                    if r[0]:
-                        return Response(r[1], headers={"Content-Type": self.mediatype})
-                    else:
-                        return PlainTextResponse(
-                            "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500,
-                        )
+                    return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "dd":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -1131,14 +1137,7 @@ def scheme(
                     """.replace(
                     "xxx", self.instance_uri
                 )
-                r = sparql_construct(q, self.mediatype)
-                if r[0]:
-                    return Response(r[1], headers={"Content-Type": self.mediatype})
-                else:
-                    return PlainTextResponse(
-                        "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500,
-                    )
+                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "vocpub":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -1207,15 +1206,7 @@ def scheme(
                     """.replace(
                     "xxx", self.instance_uri
                 )
-
-                r = sparql_construct(q, self.mediatype)
-                if r[0]:
-                    return Response(r[1], headers={"Content-Type": self.mediatype})
-                else:
-                    return PlainTextResponse(
-                        "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500,
-                    )
+                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
             alt = super().render()
             if alt is not None:
@@ -1247,6 +1238,19 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                 {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd},
                 "nvs",
             )
+
+        def _render_sparql_response_rdf(self, sparql_response):
+            if sparql_response[0]:
+                return Response(
+                    '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[1]
+                    if "xml" in self.mediatype else sparql_response[1],
+                    headers={"Content-Type": self.mediatype}
+                )
+            else:
+                return PlainTextResponse(
+                    "There was an error obtaining the Concept RDF from the Triplestore",
+                    status_code=500,
+                )
 
         def _get_collection(self):
             for collection in cache_return(collections_or_conceptschemes="collections"):
@@ -1370,14 +1374,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                         """.replace(
                         "DATA_URI", DATA_URI
                     )
-                    r = sparql_construct(q, self.mediatype)
-                    if r[0]:
-                        return Response(r[1], headers={"Content-Type": self.mediatype})
-                    else:
-                        return PlainTextResponse(
-                            "There was an error obtaining the Collections RDF from the Triplestore",
-                            status_code=500,
-                        )
+                    return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "dd":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -1431,14 +1428,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                 ).replace(
                     "DATA_URI", DATA_URI
                 )
-                r = sparql_construct(q, self.mediatype)
-                if r[0]:
-                    return Response(r[1], headers={"Content-Type": self.mediatype})
-                else:
-                    return PlainTextResponse(
-                        "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500,
-                    )
+                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "vocpub":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -1477,15 +1467,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                 ).replace(
                     "DATA_URI", DATA_URI
                 )
-
-                r = sparql_construct(q, self.mediatype)
-                if r[0]:
-                    return Response(r[1], headers={"Content-Type": self.mediatype})
-                else:
-                    return PlainTextResponse(
-                        "There was an error obtaining the Collections RDF from the Triplestore",
-                        status_code=500,
-                    )
+                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
             self.instance_uri = f"{DATA_URI}/standard_name/"
             alt = super().render()
@@ -1539,6 +1521,18 @@ class ConceptRenderer(Renderer):
             concept_profiles["puv"] = puv
 
         super().__init__(request, self.instance_uri, concept_profiles, "nvs")
+
+    def _render_sparql_response_rdf(self, sparql_response):
+        if sparql_response[0]:
+            return Response(
+                '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[1] if "xml" in self.mediatype else sparql_response[1],
+                headers={"Content-Type": self.mediatype}
+            )
+        else:
+            return PlainTextResponse(
+                "There was an error obtaining the Concept RDF from the Triplestore",
+                status_code=500,
+            )
 
     def _render_nvs_or_puv_html(self):
         q = """
@@ -1768,14 +1762,7 @@ class ConceptRenderer(Renderer):
             """.replace(
             "xxx", self.instance_uri
         )
-        r = sparql_construct(q, self.mediatype)
-        if r[0]:
-            return Response(r[1], headers={"Content-Type": self.mediatype})
-        else:
-            return PlainTextResponse(
-                "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500,
-            )
+        return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def _render_skos_rdf(self):
         q = """
@@ -1795,14 +1782,7 @@ class ConceptRenderer(Renderer):
             """.replace(
             "xxx", self.instance_uri
         )
-        r = sparql_construct(q, self.mediatype)
-        if r[0]:
-            return Response(r[1], headers={"Content-Type": self.mediatype})
-        else:
-            return PlainTextResponse(
-                "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500,
-            )
+        return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def _render_vocpub_rdf(self):
         q = """
@@ -1825,14 +1805,7 @@ class ConceptRenderer(Renderer):
             """.replace(
             "xxx", self.instance_uri
         )
-        r = sparql_construct(q, self.mediatype)
-        if r[0]:
-            return Response(r[1], headers={"Content-Type": self.mediatype})
-        else:
-            return PlainTextResponse(
-                "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500,
-            )
+        return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def _render_sdo_rdf(self):
         q = """
@@ -1879,14 +1852,7 @@ class ConceptRenderer(Renderer):
             """.replace(
             "DATA_URI", DATA_URI
         )
-        r = sparql_construct(q, self.mediatype)
-        if r[0]:
-            return Response(r[1], headers={"Content-Type": self.mediatype})
-        else:
-            return PlainTextResponse(
-                "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500,
-            )
+        return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def _render_puv_rdf(self):
         q = """
@@ -1912,14 +1878,7 @@ class ConceptRenderer(Renderer):
             """.replace(
             "xxx", self.instance_uri
         )
-        r = sparql_construct(q, self.mediatype)
-        if r[0]:
-            return Response(r[1], headers={"Content-Type": self.mediatype})
-        else:
-            return PlainTextResponse(
-                "There was an error obtaining the Concept RDF from the Triplestore",
-                status_code=500,
-            )
+        return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def render(self):
         if self.profile == "nvs":
@@ -2095,14 +2054,13 @@ def well_known_void(
         def render(self):
             if self.mediatype == "text/turtle":
                 return Response(
-                    open(void_file).read(), headers={"Content-Type": "text/turtle"}
+                    open(void_file).read(),
+                    headers={"Content-Type": "text/turtle"}
                 )
             else:
                 from rdflib import Graph
 
-                logging.debug(f"media type: {self.mediatype}")
                 g = Graph().parse(void_file, format="turtle")
-                logging.debug(len(g))
                 return Response(
                     content=g.serialize(format=self.mediatype),
                     headers={"Content-Type": self.mediatype},

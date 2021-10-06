@@ -479,7 +479,10 @@ class Renderer(object, metaclass=ABCMeta):
             graph.destroy({})
             del graph
 
-        return Response(response_text, media_type=response_mimetype, headers=headers)
+        return Response(
+            response_text,
+            media_type=response_mimetype, headers=headers
+        )
 
     def _render_alt_profile_html(self, template_context=None):
         profiles = {}
