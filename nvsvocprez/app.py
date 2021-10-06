@@ -562,6 +562,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                         BIND (STRAFTER(STR(?c), ".uk") AS ?systemUri)
 
                         acc_dep
+                        
                         OPTIONAL {
                             ?c <http://www.w3.org/2002/07/owl#deprecated> ?dep .
                         }
@@ -604,7 +605,9 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                     collection = self._get_collection()
                     collection["concepts"] = self._get_concepts()
 
-                    if not collection["concepts"]:
+                    if len(collection["concepts"]) == 0:
+                        pass
+                    elif not collection["concepts"]:
                         return templates.TemplateResponse(
                             "error.html",
                             {
