@@ -1,6 +1,7 @@
 from .renderer import Renderer
 from .profile import Profile
 from .data import RDF_MEDIATYPES
+from config import SYSTEM_URI
 
 
 class ContainerRenderer(Renderer):
@@ -46,7 +47,7 @@ class ContainerRenderer(Renderer):
 
         super().__init__(
             request,
-            str(request.url).split("?")[0],
+            f"{SYSTEM_URI}{str(request.url.path)}" ,
             new_profiles,
             default_profile_token,
         )
