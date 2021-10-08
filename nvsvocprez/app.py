@@ -115,7 +115,7 @@ def index(request: Request):
 def collections(request: Request):
     class CollectionsRenderer(ContainerRenderer):
         def __init__(self):
-            self.instance_uri = str(request.url).split("?")[0]
+            self.instance_uri = SYSTEM_URI
             self.label = "NVS Vocabularies"
             self.comment = (
                 "SKOS concept collections held in the NERC Vocabulary Server. A concept collection "
@@ -309,7 +309,7 @@ def collections(request: Request):
 def conceptschemes(request: Request):
     class ConceptSchemeRenderer(ContainerRenderer):
         def __init__(self):
-            self.instance_uri = str(request.url).split("?")[0]
+            self.instance_uri = SYSTEM_URI
             self.label = "NVS Thesauri"
             self.comment = (
                 "SKOS concept schemes managed by the NERC Vocabulary Server. A concept scheme can be "
@@ -320,7 +320,7 @@ def conceptschemes(request: Request):
             )
             super().__init__(
                 request,
-                str(request.url).split("?")[0],
+                SYSTEM_URI,
                 {"nvs": nvs},
                 "nvs",
             )
