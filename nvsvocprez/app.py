@@ -320,7 +320,7 @@ def conceptschemes(request: Request):
             )
             super().__init__(
                 request,
-                SYSTEM_URI,
+                self.instance_uri,
                 {"nvs": nvs},
                 "nvs",
             )
