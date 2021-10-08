@@ -48,7 +48,7 @@ def index(request: Request):
 
     class DatasetRenderer(Renderer):
         def __init__(self):
-            self.instance_uri = str(request.base_url)
+            self.instance_uri = SYSTEM_URI
             self.label = "NERC Vocabulary Server Content"
             self.comment = (
                 "The NVS gives access to standardised and hierarchically-organized vocabularies. It is "
