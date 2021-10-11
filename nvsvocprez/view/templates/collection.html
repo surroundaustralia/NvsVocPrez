@@ -4,11 +4,6 @@
     <div style="grid-column: 1; grid-row: 1;">
       <h1>Vocabulary</h1>
       <h2>{{ collection.prefLabel.value }}</h2>
-        {% if collection.conforms_to is defined and collection.conforms_to.value == "https://w3id.org/env/puv" %}
-        <h4>
-          <em>This collection is linked to the <a style="font-size:revert;" href="https://w3id.org/env/puv">Parameter Usage Vocabulary ontology</a> and a <a style="font-size:revert;" href="?_profile=puv&_mediatype=application/rdf+xml">PUV profile</a> view of it is available.</em>
-        </h4>
-        {% endif %}
       <table class="metadata">
         <tr>
           <th>URI</th>
@@ -52,6 +47,11 @@
         {% if collection.seeAlso is defined  %}
         <tr>
           <th><a href="http://www.w3.org/2000/01/rdf-schema#seeAlso">See Also</a></th><td><a href="{{ collection.seeAlso.value }}">{{ collection.seeAlso.value }}</a></td>
+        </tr>
+        {% endif %}
+        {% if collection.conforms_to is defined %}
+        <tr>
+          <th><a href="http://purl.org/dc/terms/conformsTo">conformsTo</a></th><td><a href="{{ collection.conforms_to.value }}">{{ collection.conforms_to.value }}</a></td>
         </tr>
         {% endif %}
     </table>
