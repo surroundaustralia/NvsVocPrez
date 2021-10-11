@@ -132,13 +132,8 @@ curl 'http://vocab.nerc.ac.uk/sparql/sparql?query={YOUR_QUERY_URL_ENCODED}'<br /
     </style>
     <script src='https://unpkg.com/@triply/yasgui/build/yasgui.min.js'></script>
     <script type="text/javascript">
-        /*
-        var yasgui = YASGUI(document.getElementById("yasgui"), {
-            yasqe:{sparql:{endpoint:'{{ url_for('sparql') }}'}} // default endpoint
-        });
-        */
         const yasgui = new Yasgui(document.getElementById("yasgui"), {
-          requestConfig: { endpoint: "{{ url_for('sparql') }}" },
+          requestConfig: { endpoint: "{{ SYSTEM_URI }}/sparql" },
           copyEndpointOnNewTab: false
         });
 
