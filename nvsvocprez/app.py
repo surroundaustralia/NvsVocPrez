@@ -2079,7 +2079,7 @@ def contact(request: Request):
     return templates.TemplateResponse("contact_us.html", {"request": request})
 
 
-@api.get("/sparql")
+@api.get("/sparql/")
 def sparql(request: Request):
     # queries to /sparql with an accept header set to a SPARQL return type or an RDF type
     # are forwarded to /endpoint for a response
