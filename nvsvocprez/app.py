@@ -2096,7 +2096,7 @@ def sparql(request: Request):
     accepts = get_accepts(request.headers["Accept"])
     accept = [x for x in accepts if x in QUERY_RESPONSE_MEDIA_TYPES][0]
     if accept == "text/html":
-        return templates.TemplateResponse("sparql.html", {"request": request, "SYSTEM_URI": SYSTEM_URI})
+        return templates.TemplateResponse("sparql.html", {"request": request})
     else:
         return endpoint_get(request)
 
