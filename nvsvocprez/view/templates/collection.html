@@ -58,6 +58,14 @@
     </div>
     <div style="grid-column: 2; grid-row: 1;">
       {% include 'alt_link.html' %}
+      {% if collection.conforms_to is defined %}
+      <div>
+        <p>
+          <a class="format-button" style="width:200px;" href="?_profile=puv&_mediatype=application/rdf+xml">PUV profile view</a>
+          <span class="tooltip" style="font-weight:bold;">?<span class="tooltiptext">Parameter Usage Vocabulary RDF + XML download.</span></span>
+        </p>
+      </div>
+      {% endif %}
     </div>
   </div>
   <div style="grid-column: 1/2; grid-row: 2;">
