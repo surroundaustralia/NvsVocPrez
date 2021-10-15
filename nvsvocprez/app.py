@@ -2173,6 +2173,7 @@ def _sparql_query2(q, mimetype="application/json"):
         raise ex
 
 
+@api.post("/sparql/")
 @api.post("/sparql")
 @api.post("/endpoint")
 def endpoint_post(request: Request, query: str = fastapi.Form(...)):
