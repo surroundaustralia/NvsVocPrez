@@ -50,9 +50,15 @@
         </tr>
         {% endif %}
         {% if collection.conforms_to is defined %}
-        <tr>
-          <th><a href="http://purl.org/dc/terms/conformsTo">conformsTo</a></th><td><a href="{{ collection.conforms_to.value }}">{{ collection.conforms_to.value }}</a></td>
-        </tr>
+          <tr>
+            <th><a href="http://purl.org/dc/terms/conformsTo">conformsTo</a></th>
+              <td>
+                {% set conforms_to_profiles = collection.conforms_to.value.split(",") %}
+                  {% for p in conforms_to_profiles %}
+                    <a href="{{ p }}">{{ p }}</a><br>
+                  {% endfor %}
+              </td>
+          </tr>
         {% endif %}
     </table>
     </div>
