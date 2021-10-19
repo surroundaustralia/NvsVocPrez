@@ -508,8 +508,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                 if collection["id"]["value"] == collection_id:
                     if collection.get("conforms_to"):
                         if (
-                            collection["conforms_to"]["value"]
-                            == "https://w3id.org/env/puv"
+                            "https://w3id.org/env/puv" in collection["conforms_to"]["value"]
                         ):
                             p = Profile(
                                 uri="https://w3id.org/env/puv",
