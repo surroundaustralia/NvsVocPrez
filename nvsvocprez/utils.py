@@ -65,35 +65,37 @@ def cache_fill(
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX dcterms: <http://purl.org/dc/terms/>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            SELECT *
+            SELECT ?uri ?id ?systemUri ?prefLabel ?created ?issued ?modified ?creator ?publisher
+            (GROUP_CONCAT(?conformsto;SEPARATOR=",") AS ?conforms_to) ?versionInfo ?description ?registermanager ?registerowner ?seeAlso
             WHERE {
                 ?uri a skos:Collection .
                 BIND (STRAFTER(STRBEFORE(STR(?uri), "/current/"), "/collection/") AS ?id)
                 BIND (STRAFTER(STR(?uri), ".uk") AS ?systemUri)
                 OPTIONAL { ?uri skos:prefLabel ?prefLabel .
-                    FILTER(lang(?prefLabel) = "en" || lang(?prefLabel) = "") 
+                    FILTER(lang(?prefLabel) = "en" || lang(?prefLabel) = "")
                 }
                 OPTIONAL { ?uri dcterms:created ?created }
                 OPTIONAL { ?uri dcterms:issued ?issued }
-                OPTIONAL { 
+                OPTIONAL {
                     ?uri dcterms:date ?m .
                     BIND (SUBSTR(?m, 0, 11) AS ?modified)
                 }
                 OPTIONAL { ?uri dcterms:creator ?creator }
                 OPTIONAL { ?uri dcterms:publisher ?publisher }
-                OPTIONAL { ?uri dcterms:conformsTo ?conforms_to }
+                OPTIONAL { ?uri dcterms:conformsTo ?conformsto }
                 OPTIONAL { ?uri owl:versionInfo ?versionInfo }
                 OPTIONAL { ?uri dcterms:description ?description .
-                    FILTER(lang(?description) = "en" || lang(?description) = "") 
+                    FILTER(lang(?description) = "en" || lang(?description) = "")
                 }
-                # NVS special properties                 
+                # NVS special properties
                 OPTIONAL {
                     ?uri <http://www.isotc211.org/schemas/grg/RE_RegisterManager> ?registermanager .
                     ?uri <http://www.isotc211.org/schemas/grg/RE_RegisterOwner> ?registerowner .
-                }            
+                }
                 OPTIONAL { ?uri rdfs:seeAlso ?seeAlso }
             }
-            ORDER BY ?prefLabel
+group by ?uri ?id ?systemUri ?prefLabel ?created ?issued ?modified ?creator ?publisher ?versionInfo ?description ?registermanager ?registerowner ?seeAlso
+            ORDER BY ?prefLabel 
             """
 
         collections_json = sparql_query(q)

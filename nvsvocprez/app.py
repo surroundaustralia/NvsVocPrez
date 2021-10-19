@@ -185,7 +185,6 @@ def collections(request: Request):
                         PREFIX owl: <http://www.w3.org/2002/07/owl#>
                         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-
                         CONSTRUCT {
                             ?cs a skos:Collection ;
                                 dc:alternative ?alternative ;
@@ -199,12 +198,11 @@ def collections(request: Request):
                                 skos:altLabel ?al ;
                                 skos:narrower ?narrower ;
                                 skos:prefLabel ?pl .
-
                             ?cs
                                 grg:RE_RegisterManager ?registermanager ;
                                 grg:RE_RegisterOwner ?registerowner .
-
                             ?cs rdfs:seeAlso ?seeAlso .
+                            ?cs dc:conformsTo ?conformsTo .
                         }
                         WHERE {
                             ?cs a skos:Collection ;
@@ -217,7 +215,6 @@ def collections(request: Request):
                                 rdfs:comment ?comment ;
                                 owl:versionInfo ?version ;
                                 skos:prefLabel ?pl .
-
                             OPTIONAL { ?cs skos:altLabel ?al }
                             OPTIONAL { ?cs skos:narrower ?narrower }
                             OPTIONAL {
@@ -229,7 +226,8 @@ def collections(request: Request):
                                 ?cs grg:RE_RegisterManager ?registerowner .
                             }
                             OPTIONAL { ?cs rdfs:seeAlso ?seeAlso }
-                        }
+                            OPTIONAL { ?cs dc:conformsTo ?conformsTo }
+                        } 
                         """
                     return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile == "mem":
@@ -510,8 +508,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                 if collection["id"]["value"] == collection_id:
                     if collection.get("conforms_to"):
                         if (
-                            collection["conforms_to"]["value"]
-                            == "https://w3id.org/env/puv"
+                            "https://w3id.org/env/puv" in collection["conforms_to"]["value"]
                         ):
                             p = Profile(
                                 uri="https://w3id.org/env/puv",
