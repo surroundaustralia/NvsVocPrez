@@ -42,6 +42,7 @@ acc_dep_map = {
 
 
 @api.get("/")
+@api.head("/")
 def index(request: Request):
     dcat_file = api_home_dir / "dcat.ttl"
     sdo_file = api_home_dir / "sdo.ttl"
@@ -112,6 +113,7 @@ def index(request: Request):
 
 
 @api.get("/collection/")
+@api.head("/collection/")
 def collections(request: Request):
     class CollectionsRenderer(ContainerRenderer):
         def __init__(self):
@@ -304,6 +306,7 @@ def collections(request: Request):
 
 
 @api.get("/scheme/")
+@api.head("/scheme/")
 def conceptschemes(request: Request):
     class ConceptSchemeRenderer(ContainerRenderer):
         def __init__(self):
@@ -488,12 +491,16 @@ def conceptschemes(request: Request):
 
 @api.get("/collection/{collection_id}")
 @api.get("/collection/{collection_id}/")
+@api.head("/collection/{collection_id}")
+@api.head("/collection/{collection_id}/")
 def collection_no_current(request: Request, collection_id):
     return RedirectResponse(url=f"/collection/{collection_id}/current/")
 
 
 @api.get("/collection/{collection_id}/current/")
 @api.get("/collection/{collection_id}/current/{acc_dep_or_concept}/")
+@api.head("/collection/{collection_id}/current/")
+@api.head("/collection/{collection_id}/current/{acc_dep_or_concept}/")
 def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
         # this is a call for a Concept
@@ -782,11 +789,13 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
 
 @api.get("/collection/{collection_id}/current/{concept_id}/{vnum}/")
+@api.head("/collection/{collection_id}/current/{concept_id}/{vnum}/")
 def concept_with_version(request: Request, collection_id, concept_id, vnum: int):
     return concept(request)
 
 
 @api.get("/collection/{collection_id}/current/{acc_dep_or_concept}")
+@api.head("/collection/{collection_id}/current/{acc_dep_or_concept}")
 def collection_concept_noslash(request: Request, collection_id, acc_dep_or_concept):
     return RedirectResponse(
         url=f"/collection/{collection_id}/current/{acc_dep_or_concept}/"
@@ -795,12 +804,16 @@ def collection_concept_noslash(request: Request, collection_id, acc_dep_or_conce
 
 @api.get("/scheme/{scheme_id}")
 @api.get("/scheme/{scheme_id}/")
+@api.head("/scheme/{scheme_id}")
+@api.head("/scheme/{scheme_id}/")
 def scheme_no_current(request: Request, scheme_id):
     return RedirectResponse(url=f"/scheme/{scheme_id}/current/")
 
 
 @api.get("/scheme/{scheme_id}/current/")
 @api.get("/scheme/{scheme_id}/current/{acc_dep}/")
+@api.head("/scheme/{scheme_id}/current/")
+@api.head("/scheme/{scheme_id}/current/{acc_dep}/")
 def scheme(
     request: Request, scheme_id, acc_dep: Literal["accepted", "deprecated", "all", None] = None
 ):
@@ -1217,6 +1230,7 @@ def scheme(
 
 
 @api.get("/scheme/{scheme_id}/current/{acc_dep}")
+@api.head("/scheme/{scheme_id}/current/{acc_dep}")
 def scheme_concept_noslash(request: Request, scheme_id, acc_dep):
     return RedirectResponse(url=f"/scheme/{scheme_id}/current/{acc_dep}/")
 
@@ -1224,6 +1238,9 @@ def scheme_concept_noslash(request: Request, scheme_id, acc_dep):
 @api.get("/standard_name/")
 @api.get("/standard_name/{acc_dep_or_concept}")
 @api.get("/standard_name/{acc_dep_or_concept}/")
+@api.head("/standard_name/")
+@api.head("/standard_name/{acc_dep_or_concept}")
+@api.head("/standard_name/{acc_dep_or_concept}/")
 def standard_name(request: Request, acc_dep_or_concept: str = None):
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
         # this is a call for a Standard Name Concept
@@ -1915,6 +1932,7 @@ def concept(request: Request):
 
 
 @api.get("/mapping/{int_ext}/{mapping_id}/")
+@api.head("/mapping/{int_ext}/{mapping_id}/")
 def mapping(request: Request):
     class MappingRenderer(Renderer):
         def __init__(self):
@@ -2025,16 +2043,19 @@ def mapping(request: Request):
 
 
 @api.get("/about")
+@api.head("/about")
 def about(request: Request):
     return templates.TemplateResponse("about.html", {"request": request})
 
 
 @api.get("/.well_known/")
+@api.head("/.well_known/")
 def well_known(request: Request):
     return RedirectResponse(url="/.well_known/void")
 
 
 @api.get("/.well_known/void")
+@api.head("/.well_known/void")
 def well_known_void(
     request: Request,
     _profile: Optional[AnyStr] = None,
@@ -2072,12 +2093,16 @@ def well_known_void(
 
 @api.get("/contact")
 @api.get("/contact-us")
+@api.head("/contact")
+@api.head("/contact-us")
 def contact(request: Request):
     return templates.TemplateResponse("contact_us.html", {"request": request})
 
 
 @api.get("/sparql")
 @api.get("/sparql/")
+@api.head("/sparql")
+@api.head("/sparql/")
 def sparql(request: Request):
     # queries to /sparql with an accept header set to a SPARQL return type or an RDF type
     # are forwarded to /endpoint for a response
@@ -2259,6 +2284,7 @@ def endpoint_post(request: Request, query: str = fastapi.Form(...)):
 
 
 @api.get("/endpoint")
+@api.head("/endpoint")
 def endpoint_get(request: Request):
     if request.query_params.get("query") is not None:
         # SPARQL GET request
