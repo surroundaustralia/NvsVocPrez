@@ -1,9 +1,10 @@
 import logging
 from typing import Literal
 import httpx
-import config
+from config import DATA_URI
 import pickle
 from pathlib import Path
+
 
 api_home_dir = Path(__file__).parent
 collections_pickle = Path(api_home_dir / "cache" / "collections.pickle")
@@ -224,8 +225,8 @@ def get_accepts(accept_header: str):
         for accept in accept_header.split(",")
     ]
 
-def exists_triple(subject_url: str):
-  query = f"select count(*) where {{ <{subject_url}> ?a ?b .}}"
-  rr = sparql_query(query.replace("https","http"))
+def exists_triple(s: str):
+  query = f"select count(*) where {{ <{DATA_URI + s}> ?p ?o .}}"
+  rr = sparql_query(query)
   count = rr[1][0]['.1'].get('value')
   return True if bool(int(count)) else False

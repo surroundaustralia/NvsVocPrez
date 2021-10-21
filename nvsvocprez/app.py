@@ -504,7 +504,7 @@ def collection_no_current(request: Request, collection_id):
 @api.head("/collection/{collection_id}/current/{acc_dep_or_concept}/")
 def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
-    if not exists_triple(request.url):
+    if not exists_triple(request.url.path):
       raise HTTPException(status_code=404)
 
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
@@ -823,7 +823,7 @@ def scheme(
     request: Request, scheme_id, acc_dep: Literal["accepted", "deprecated", "all", None] = None
 ):
 
-    if not exists_triple(request.url):
+    if not exists_triple(request.url.path):
       raise HTTPException(status_code=404)
 
     class SchemeRenderer(Renderer):
@@ -1252,7 +1252,7 @@ def scheme_concept_noslash(request: Request, scheme_id, acc_dep):
 @api.head("/standard_name/{acc_dep_or_concept}/")
 def standard_name(request: Request, acc_dep_or_concept: str = None):
 
-    if not exists_triple(request.url):
+    if not exists_triple(request.url.path):
       raise HTTPException(status_code=404)
 
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
@@ -1946,7 +1946,7 @@ def concept(request: Request):
 @api.head("/mapping/{int_ext}/{mapping_id}/")
 def mapping(request: Request):
 
-    if not exists_triple(request.url):
+    if not exists_triple(request.url.path):
       raise HTTPException(status_code=404)
 
     class MappingRenderer(Renderer):
