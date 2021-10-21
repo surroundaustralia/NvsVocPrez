@@ -223,3 +223,9 @@ def get_accepts(accept_header: str):
         accept.split(";")[0].replace("*/*", "text/html")
         for accept in accept_header.split(",")
     ]
+
+def exists_triple(subject_url: str):
+  query = f"select count(*) where {{ <{subject_url}> ?a ?b .}}"
+  rr = sparql_query(query.replace("https","http"))
+  count = rr[1][0]['.1'].get('value')
+  return True if bool(int(count)) else False

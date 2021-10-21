@@ -2,6 +2,7 @@ import logging
 from typing import Optional, AnyStr, Literal
 from pathlib import Path
 import fastapi
+from fastapi import HTTPException
 import uvicorn
 from starlette.requests import Request
 from starlette.responses import (
@@ -15,7 +16,7 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts
+from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
@@ -502,6 +503,10 @@ def collection_no_current(request: Request, collection_id):
 @api.head("/collection/{collection_id}/current/")
 @api.head("/collection/{collection_id}/current/{acc_dep_or_concept}/")
 def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
+
+    if not exists_triple(request.url):
+      raise HTTPException(status_code=404)
+
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
         # this is a call for a Concept
         return concept(request)
@@ -817,6 +822,10 @@ def scheme_no_current(request: Request, scheme_id):
 def scheme(
     request: Request, scheme_id, acc_dep: Literal["accepted", "deprecated", "all", None] = None
 ):
+
+    if not exists_triple(request.url):
+      raise HTTPException(status_code=404)
+
     class SchemeRenderer(Renderer):
         def __init__(self):
             self.instance_uri = f"{DATA_URI}/scheme/{scheme_id}/current/"
@@ -1242,6 +1251,10 @@ def scheme_concept_noslash(request: Request, scheme_id, acc_dep):
 @api.head("/standard_name/{acc_dep_or_concept}")
 @api.head("/standard_name/{acc_dep_or_concept}/")
 def standard_name(request: Request, acc_dep_or_concept: str = None):
+
+    if not exists_triple(request.url):
+      raise HTTPException(status_code=404)
+
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
         # this is a call for a Standard Name Concept
         return standard_name_concept(request, acc_dep_or_concept)
@@ -1513,8 +1526,6 @@ class ConceptRenderer(Renderer):
                 f"{DATA_URI}/standard_name/"
                 + str(request.url).split("/standard_name/")[1].split("?")[0]
             )
-
-        print(self.instance_uri)
 
         concept_profiles = {
             "nvs": nvs,
@@ -1934,6 +1945,10 @@ def concept(request: Request):
 @api.get("/mapping/{int_ext}/{mapping_id}/")
 @api.head("/mapping/{int_ext}/{mapping_id}/")
 def mapping(request: Request):
+
+    if not exists_triple(request.url):
+      raise HTTPException(status_code=404)
+
     class MappingRenderer(Renderer):
         def __init__(self):
             self.instance_uri = (
