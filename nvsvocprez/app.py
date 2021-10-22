@@ -504,7 +504,7 @@ def collection_no_current(request: Request, collection_id):
 @api.head("/collection/{collection_id}/current/{acc_dep_or_concept}/")
 def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
-    if not exists_triple(request.url.path) and acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
+    if not exists_triple(request.url.path) and acc_dep_or_concept not in ["accepted", "deprecated", "all"]:
       raise HTTPException(status_code=404)
 
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
