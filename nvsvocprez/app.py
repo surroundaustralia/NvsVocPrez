@@ -1252,7 +1252,7 @@ def scheme_concept_noslash(request: Request, scheme_id, acc_dep):
 @api.head("/standard_name/{acc_dep_or_concept}/")
 def standard_name(request: Request, acc_dep_or_concept: str = None):
 
-    if not exists_triple(request.url.path):
+    if not exists_triple(request.url.path) and request.url.path != "/standard_name/":
       raise HTTPException(status_code=404)
 
     if acc_dep_or_concept not in ["accepted", "deprecated", "all", None]:
