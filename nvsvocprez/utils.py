@@ -1,6 +1,7 @@
 import logging
 from typing import Literal
 import httpx
+import config
 from config import DATA_URI
 import pickle
 from pathlib import Path
