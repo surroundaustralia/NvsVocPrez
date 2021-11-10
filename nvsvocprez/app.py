@@ -1540,8 +1540,7 @@ class ConceptRenderer(Renderer):
                 if collection["uri"]["value"] == collection_uri:
                     if (
                         collection.get("conforms_to")
-                        and collection["conforms_to"]["value"]
-                        == "https://w3id.org/env/puv"
+                        and "https://w3id.org/env/puv" in collection["conforms_to"]["value"]
                     ):
                         return True
             return False
