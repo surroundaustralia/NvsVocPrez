@@ -1552,10 +1552,22 @@ class ConceptRenderer(Renderer):
 
     def _render_sparql_response_rdf(self, sparql_response):
         if sparql_response[0]:
-            return Response(
-                '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[1] if "xml" in self.mediatype else sparql_response[1],
-                headers={"Content-Type": self.mediatype}
-            )
+            # if the requested response is application/rdf+xml, we must:
+            # - use the RDFlib pretty-xml serialization format
+            # - add the ?xml header to it
+            if "xml" in self.mediatype:
+                g = Graph()
+                g.parse(sparql_response[1], format="xml")
+
+                return Response(
+                    g.serialize(format="pretty-xml"),
+                    headers={"Content-Type": self.mediatype}
+                )
+            else:
+                return Response(
+                    sparql_response[1],
+                    headers={"Content-Type": self.mediatype}
+                )
         else:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
