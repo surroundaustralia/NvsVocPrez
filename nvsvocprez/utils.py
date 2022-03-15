@@ -2,9 +2,11 @@ import logging
 from typing import Literal
 import httpx
 import config
-from config import DATA_URI
+from config import DATA_URI, ORDS_ENDPOINT_URL
 import pickle
 from pathlib import Path
+import requests
+
 
 
 api_home_dir = Path(__file__).parent
@@ -231,3 +233,14 @@ def exists_triple(s: str):
   rr = sparql_query(query)
   count = rr[1][0]['.1'].get('value')
   return True if bool(int(count)) else False
+
+
+def get_alt_profile_json():
+    """Returns alt profile JSON from livbodcsos ords endpoint."""
+    url = f"{ORDS_ENDPOINT_URL}/ords/webtabsn/nvs/altprof"
+    resp = requests.get(url)
+    if resp.ok:
+        return resp.json()["items"]
+    else:
+        logging.error("Failed to retrieve alternate profile information from %s", url)
+        return []   # Return blank list to avoid internal server error.

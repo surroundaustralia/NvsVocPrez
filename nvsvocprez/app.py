@@ -11,15 +11,15 @@ from starlette.responses import (
     PlainTextResponse,
     JSONResponse,
 )
-import requests
+
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple
+from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profile_json
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
-from config import SYSTEM_URI, DATA_URI, PORT, ORDS_ENDPOINT_URL
+from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
 from rdflib import Literal as RdfLiteral, Namespace
 from rdflib.namespace import DC, DCTERMS, ORG, OWL, RDF, RDFS, SKOS, VOID
@@ -2365,17 +2365,6 @@ def endpoint_get(request: Request):
 def cache_clr(request: Request):
     cache_clear()
     return PlainTextResponse("Cache cleared")
-
-
-def get_alt_profile_json():
-    """Returns alt profile JSON from livbodcsos ords endpoint."""
-    url = f"{ORDS_ENDPOINT_URL}/ords/webtabsn/nvs/altprof"
-    resp = requests.get(url)
-    if resp.ok:
-        return resp.json()["items"]
-    else:
-        logging.error("Failed to retrieve alternate profile information from %s", url)
-        return []   # Return blank list to avoid internal server error.
 
 
 if __name__ == "__main__":
