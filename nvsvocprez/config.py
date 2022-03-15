@@ -13,4 +13,4 @@ SPARQL_USERNAME = os.getenv("SPARQL_USERNAME", "")
 SPARQL_PASSWORD = os.getenv("SPARQL_PASSWORD", "")
 SYSTEM_URI = os.getenv("SYSTEM_URI", "http://localhost:5007")
 DATA_URI = os.getenv("DATA_URI", "http://vocab.nerc.ac.uk")
-ORDS_ENDPOINT_URL = os.getenv("ORDS_ENDPOINT_URL", "https://livbodcsos.bodc.me:8443")
+ORDS_ENDPOINT_URL = os.getenv("ORDS_ENDPOINT_URL") # BODC ORDS URL.

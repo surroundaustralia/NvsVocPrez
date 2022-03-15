@@ -237,10 +237,13 @@ def exists_triple(s: str):
 
 def get_alt_profile_json():
     """Returns alt profile JSON from livbodcsos ords endpoint."""
-    url = f"{ORDS_ENDPOINT_URL}/ords/webtabsn/nvs/altprof"
-    resp = requests.get(url)
-    if resp.ok:
+    if ORDS_ENDPOINT_URL is None:
+        logging.error("Environment variable ORDS_ENDPOINT_URL is not set.")
+        return []
+    try:
+        url = f"{ORDS_ENDPOINT_URL}/webtabsn/nvs/altprof"
+        resp = requests.get(url)
         return resp.json()["items"]
-    else:
-        logging.error("Failed to retrieve alternate profile information from %s", url)
+    except requests.RequestException as exc: 
+        logging.error("Failed to retrieve alternate profile information from %s.\n%s", url, exc)
         return []   # Return blank list to avoid internal server error.
