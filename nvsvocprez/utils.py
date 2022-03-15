@@ -1,5 +1,5 @@
 import logging
-from typing import Literal
+from typing import Dict, Literal
 import httpx
 import config
 from config import DATA_URI, ORDS_ENDPOINT_URL
@@ -235,15 +235,19 @@ def exists_triple(s: str):
   return True if bool(int(count)) else False
 
 
-def get_alt_profile_json():
-    """Returns alt profile JSON from livbodcsos ords endpoint."""
+def get_alt_profiles() -> Dict:
+    """Get alt profiles from livbodcsos ords endpoint.
+    
+        Returns (Dict): Dict of parsed alt profile data. {[ alt_profile_url : {alt_profile_object}, ...]}.
+    """
     if ORDS_ENDPOINT_URL is None:
         logging.error("Environment variable ORDS_ENDPOINT_URL is not set.")
-        return []
+        return {}
     try:
         url = f"{ORDS_ENDPOINT_URL}/webtabsn/nvs/altprof"
-        resp = requests.get(url)
-        return resp.json()["items"]
+        resp_json = requests.get(url).json()
+        altprof_data_by_url = {alt["url"]: alt for alt in resp_json['items']}
+        return altprof_data_by_url
     except requests.RequestException as exc: 
         logging.error("Failed to retrieve alternate profile information from %s.\n%s", url, exc)
-        return []   # Return blank list to avoid internal server error.
+        return {}   # Return blank list to avoid internal server error.

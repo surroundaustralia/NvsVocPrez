@@ -17,7 +17,7 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profile_json
+from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
@@ -634,7 +634,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": self.profile,
-                            "alt_profiles_json": get_alt_profile_json()
+                            "alt_profiles": get_alt_profiles()
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
@@ -1363,7 +1363,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": "nvs",
-                            "alt_profiles_json": get_alt_profile_json()
+                            "alt_profiles": get_alt_profiles()
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
