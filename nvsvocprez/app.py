@@ -1764,6 +1764,11 @@ class ConceptRenderer(Renderer):
         return templates.TemplateResponse("concept.html", context=context)
 
     def _render_nvs_rdf(self):
+        exclude_filters = []
+        alt_profiles = get_alt_profiles()
+        for profile in alt_profiles:
+            exclude_filters.append(f'FILTER (!STRSTARTS(STR(?p), "{profile}"))')
+
         q = """
             PREFIX dc: <http://purl.org/dc/terms/>
             PREFIX dce: <http://purl.org/dc/elements/1.1/>
@@ -1793,11 +1798,13 @@ class ConceptRenderer(Renderer):
                 #     # { ?s ?p2 ?o2 }
                 # }
 
-                # exclude PUV properties from NVS view
-                FILTER (!STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
+                # exclude altprof properties from NVS view
+                <EXCLUDE_FILTERS>
             }        
             """.replace(
             "xxx", self.instance_uri
+        ).replace(
+            "<EXCLUDE_FILTERS>", "\n".join(exclude_filters)
         )
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
@@ -1891,7 +1898,14 @@ class ConceptRenderer(Renderer):
         )
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
-    def _render_puv_rdf(self):
+    def _render_profile_rdf(self):
+        exclude_filters = []
+        alt_profiles = get_alt_profiles()
+        for alt in alt_profiles.values():
+            if alt["token"] != self.profile:
+                alt_url = alt["url"]
+                exclude_filters.append(f'FILTER (!STRSTARTS(STR(?p), "{alt_url}"))')
+
         q = """
             PREFIX dc: <http://purl.org/dc/terms/>
             PREFIX dce: <http://purl.org/dc/elements/1.1/>
@@ -1908,16 +1922,25 @@ class ConceptRenderer(Renderer):
             }
             WHERE {
               <xxx> ?p ?o .
-
-              # include only PUV properties
-              # FILTER (STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
+              FILTER ( ?p != skos:broaderTransitive )
+              FILTER ( ?p != skos:narrowerTransitive )
+              FILTER ( ?p != skos:broader )
+              FILTER ( ?p != skos:narrower )
+              FILTER ( ?p != skos:related )
+              FILTER ( ?p != owl:sameAs )
+              # exclude other properties from altprof
+              <EXCLUDE_FILTERS>
             }
             """.replace(
             "xxx", self.instance_uri
+        ).replace(
+            "<EXCLUDE_FILTERS>", "\n".join(exclude_filters)
         )
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def render(self):
+        alt_profiles = get_alt_profiles()
+        alt_profile_tokens = [alt["token"] for alt in alt_profiles.values()]
         if self.profile == "nvs":
             if (
                 self.mediatype in RDF_MEDIATYPES
@@ -1932,12 +1955,12 @@ class ConceptRenderer(Renderer):
             return self._render_vocpub_rdf()
         elif self.profile == "sdo":
             return self._render_sdo_rdf()
-        elif self.profile == "puv":
+        elif self.profile in alt_profile_tokens:
             if (
                 self.mediatype in RDF_MEDIATYPES
                 or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP
             ):
-                return self._render_puv_rdf()
+                return self._render_profile_rdf()
             else:
                 return self._render_nvs_or_puv_html()
 
