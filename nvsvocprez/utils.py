@@ -6,6 +6,9 @@ from config import DATA_URI, ORDS_ENDPOINT_URL
 import pickle
 from pathlib import Path
 import requests
+from pyldapi.data import RDF_MEDIATYPES
+
+from pyldapi.profile import Profile
 
 
 
@@ -251,3 +254,25 @@ def get_alt_profiles() -> Dict:
     except requests.RequestException as exc: 
         logging.error("Failed to retrieve alternate profile information from %s.\n%s", url, exc)
         return {}   # Return blank list to avoid internal server error.
+    
+    
+    
+def get_profiles(collection, alt_profiles: Dict):
+    """Generate alt profile objects for all alt profiles."""
+    profiles = {}
+    for url, alt in alt_profiles.items():
+        if (
+            url in collection["conforms_to"]["value"]
+        ):
+            p = Profile(
+                uri=url,
+                id=alt['token'],
+                label=alt['name'],
+                comment=alt['vocprezdesc'],
+                mediatypes=RDF_MEDIATYPES,
+                default_mediatype="text/turtle",
+                languages=["en"],
+                default_language="en",
+            )
+        profiles[alt['token']] = p
+    return profiles
