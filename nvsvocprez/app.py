@@ -11,6 +11,7 @@ from starlette.responses import (
     PlainTextResponse,
     JSONResponse,
 )
+
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
@@ -23,7 +24,6 @@ from rdflib import Graph, URIRef
 from rdflib import Literal as RdfLiteral, Namespace
 from rdflib.namespace import DC, DCTERMS, ORG, OWL, RDF, RDFS, SKOS, VOID
 from profiles import Profile
-
 
 api_home_dir = Path(__file__).parent
 api = fastapi.FastAPI()
@@ -634,6 +634,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": self.profile,
+                            "alt_profiles": get_alt_profiles()
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
@@ -1362,6 +1363,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": "nvs",
+                            "alt_profiles": get_alt_profiles()
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
@@ -1559,22 +1561,10 @@ class ConceptRenderer(Renderer):
 
     def _render_sparql_response_rdf(self, sparql_response):
         if sparql_response[0]:
-            # if the requested response is application/rdf+xml, we must:
-            # - use the RDFlib pretty-xml serialization format
-            # - add the ?xml header to it
-            if "xml" in self.mediatype:
-                g = Graph()
-                g.parse(sparql_response[1], format="xml")
-
-                return Response(
-                    g.serialize(format="pretty-xml"),
-                    headers={"Content-Type": self.mediatype}
-                )
-            else:
-                return Response(
-                    sparql_response[1],
-                    headers={"Content-Type": self.mediatype}
-                )
+            return Response(
+                '<?xml version="1.0" encoding="UTF-8"?>\n'.encode() + sparql_response[1] if "xml" in self.mediatype else sparql_response[1],
+                headers={"Content-Type": self.mediatype}
+            )
         else:
             return PlainTextResponse(
                 "There was an error obtaining the Concept RDF from the Triplestore",
