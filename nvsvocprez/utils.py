@@ -257,7 +257,7 @@ def get_alt_profiles() -> Dict:
     
     
     
-def get_profiles(collection: Dict, alt_profiles: Dict) -> Dict:
+def get_alt_profile_objects(collection: Dict, alt_profiles: Dict) -> Dict:
     """Generate Profile objects for all alt profiles.
     
     Args:
