@@ -16,7 +16,7 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple
+from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
@@ -1534,19 +1534,26 @@ class ConceptRenderer(Renderer):
             "sdo": sdo,
         }
 
-        def _is_collection_puv():
-            collection_uri = self.instance_uri.split("/current/")[0] + "/current/"
-            for collection in cache_return(collections_or_conceptschemes="collections"):
-                if collection["uri"]["value"] == collection_uri:
-                    if (
-                        collection.get("conforms_to")
-                        and "https://w3id.org/env/puv" in collection["conforms_to"]["value"]
-                    ):
-                        return True
-            return False
-
-        if _is_collection_puv():
-            concept_profiles["puv"] = puv
+        altprof_data = get_alt_profiles()
+        collection_uri = self.instance_uri.split("/current/")[0] + "/current/"
+        for collection in cache_return(collections_or_conceptschemes="collections"):
+            if collection["uri"]["value"] == collection_uri:
+                if collection.get("conforms_to"):
+                    conforms_to = collection["conforms_to"]["value"].split(",")
+                    for profile in conforms_to:
+                        alt_data = altprof_data.get(profile, None)
+                        if not alt_data or alt_data["token"] in concept_profiles:
+                            continue
+                        concept_profiles[alt_data["token"]] = Profile(
+                            uri=alt_data["url"],
+                            id=alt_data["token"],
+                            label=alt_data["name"],
+                            comment=alt_data["vocprezdesc"],
+                            mediatypes=["text/html"] + RDF_MEDIATYPES,
+                            default_mediatype="text/html",
+                            languages=["en"],
+                            default_language="en",
+                        )
 
         super().__init__(request, self.instance_uri, concept_profiles, "nvs")
 
