@@ -17,7 +17,7 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_profiles, get_collection_query
+from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_alt_profile_objects, get_collection_query
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
@@ -520,7 +520,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
             for collection in cache_return(collections_or_conceptschemes="collections"):
                 if collection["id"]["value"] == collection_id:
                     if collection.get("conforms_to"):
-                        profiles.update(get_profiles(collection, self.alt_profiles))
+                        profiles.update(get_alt_profile_objects(collection, self.alt_profiles))
 
             super().__init__(
                 request,
