@@ -65,11 +65,17 @@
     <div style="grid-column: 2; grid-row: 1;">
       {% include 'alt_link.html' %}
       {% if collection.conforms_to is defined %}
-      <div>
-        <p>
-          <a class="format-button" style="width:200px;" href="?_profile=puv&_mediatype=application/rdf+xml">PUV profile view</a>
-          <span class="tooltip" style="font-weight:bold;">?<span class="tooltiptext">Parameter Usage Vocabulary RDF + XML download.</span></span>
-        </p>
+        {% set conforms_to_profiles = collection.conforms_to.value.split(",") %}
+        <div>
+        {% for profile in conforms_to_profiles %}
+            {% if profile in alt_profiles %}
+              {% set alt = alt_profiles[profile] %}
+              <p>
+                <a class="format-button" style="width:200px;" href="?_profile={{ alt['altnam'] }}&_mediatype=application/rdf+xml">{{ alt['description'] }}</a>
+                <span class="tooltip" style="font-weight:bold;">?<span class="tooltiptext">{{ alt['description'] }} RDF + XML download.</span></span>
+              </p>
+            {% endif %}
+        {% endfor %}
       </div>
       {% endif %}
     </div>
