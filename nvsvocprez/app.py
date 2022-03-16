@@ -17,7 +17,7 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_profiles
+from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_profiles, get_collection_query
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
@@ -597,6 +597,8 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
         def render(self):
             logging.info(f"profile is: {self.profile}")
+            self.excluded_profiles = [profile for profile, alt in self.alt_profiles.items() if alt['token'] != self.profile]
+            
             if self.profile == "nvs":
                 if self.mediatype == "text/html":
                     collection = self._get_collection()
@@ -626,42 +628,9 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
-                    q = """
-                        PREFIX dc: <http://purl.org/dc/terms/>
-                        PREFIX dce: <http://purl.org/dc/elements/1.1/>
-                        PREFIX grg: <http://www.isotc211.org/schemas/grg/>
-                        PREFIX owl: <http://www.w3.org/2002/07/owl#>
-                        PREFIX pav: <http://purl.org/pav/>
-                        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-                        PREFIX void: <http://rdfs.org/ns/void#>
-                        
-                        CONSTRUCT {
-                          <xxx> ?p ?o .                           
-                          <xxx> skos:member ?m .                        
-                          ?m ?p2 ?o2 .              
-                        }
-                        WHERE {
-                          {
-                            <xxx> ?p ?o .                          
-                            MINUS { <xxx> skos:member ?o . }
-                          }
-                          
-                          {
-                            <xxx> skos:member ?m .
-                            ?m a skos:Concept .
-                        
-                            ?m ?p2 ?o2 .
-                        
-                            FILTER ( ?p2 != skos:broaderTransitive )
-                            FILTER ( ?p2 != skos:narrowerTransitive )
-                          }
-                          
-                          FILTER (!STRSTARTS(STR(?p2), "https://w3id.org/env/puv#"))
-                        }
-                        """.replace(
-                        "xxx", self.instance_uri
-                    )
-                    return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
+                    query = get_collection_query(self.instance_uri, self.excluded_profiles)
+                    logging.info(query)
+                    return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
             elif self.profile == "dd":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -738,48 +707,10 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                 )
                 return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             else: # alt profiles.
-                exclude_profiles = [profile for profile, alt in self.alt_profiles.items() if alt['token'] != self.profile]
-                filter_text = ""
-                for profile in exclude_profiles:
-                    # Build filter text.
-                    filter_text += f'FILTER (!STRSTARTS(STR(?p2), "{profile}"))\n'
                 
-                q = f"""
-                    PREFIX dc: <http://purl.org/dc/terms/>
-                    PREFIX dce: <http://purl.org/dc/elements/1.1/>
-                    PREFIX grg: <http://www.isotc211.org/schemas/grg/>
-                    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-                    PREFIX pav: <http://purl.org/pav/>
-                    PREFIX puv: <https://w3id.org/env/puv#>
-                    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-                    PREFIX void: <http://rdfs.org/ns/void#>
-                    CONSTRUCT {{
-                      <xxx> ?p ?o .
-                      <xxx> skos:member ?m .
-                      ?m ?p2 ?o2 .
-                    }}
-                    WHERE {{
-                      {{
-                        <xxx> ?p ?o .
-                        MINUS {{ <xxx> skos:member ?o . }}
-                      }}
-                      {{
-                        <xxx> skos:member ?m .
-                        ?m a skos:Concept .
-                        ?m ?p2 ?o2 .
-                        FILTER ( ?p2 != skos:broaderTransitive )
-                        FILTER ( ?p2 != skos:narrowerTransitive )
-                        FILTER ( ?p2 != skos:broader )
-                        FILTER ( ?p2 != skos:narrower )
-                        FILTER ( ?p2 != skos:related )
-                        FILTER ( ?p2 != owl:sameAs )
-                        {filter_text}   
-                     }}
-                    }}
-                """.replace(
-                    "xxx", self.instance_uri
-                )
-                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
+                query = get_collection_query(self.instance_uri, self.excluded_profiles)
+                logging.info(query)
+                return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
 
             alt = super().render()
             if alt is not None:

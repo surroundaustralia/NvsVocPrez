@@ -257,8 +257,17 @@ def get_alt_profiles() -> Dict:
     
     
     
-def get_profiles(collection, alt_profiles: Dict):
-    """Generate alt profile objects for all alt profiles."""
+def get_profiles(collection: Dict, alt_profiles: Dict) -> Dict:
+    """Generate Profile objects for all alt profiles.
+    
+    Args:
+        collection (Dict): Dict representing collection data.
+        alt_profiles(Dict): Dict of alt profiles { uri : {profile_data}, ...}.
+        
+    Returns:
+        Dict: Dict of Profile objects representing each alternate profile.
+            { profile_name: ProfileObject, ... }
+    """
     profiles = {}
     for url, alt in alt_profiles.items():
         if (
@@ -276,3 +285,55 @@ def get_profiles(collection, alt_profiles: Dict):
             )
         profiles[alt['token']] = p
     return profiles
+
+
+def get_collection_query(instance_uri: str, exclude_profiles: list):
+    """Method to generate a query for the collections page excluding certain profiles.
+    
+    Args:
+        insance_uri (str): Instance URI.
+        exclude_profiles: List of profile URI's to be excluded from query.
+    Returns:
+        str: The construncted sparql query.
+    """
+    filter_text = ""
+    for profile in exclude_profiles:
+        # Build filter text.
+        filter_text += f'FILTER (!STRSTARTS(STR(?p2), "{profile}"))\n'
+    
+    query = f"""
+        PREFIX dc: <http://purl.org/dc/terms/>
+        PREFIX dce: <http://purl.org/dc/elements/1.1/>
+        PREFIX grg: <http://www.isotc211.org/schemas/grg/>
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        PREFIX pav: <http://purl.org/pav/>
+        PREFIX puv: <https://w3id.org/env/puv#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        PREFIX void: <http://rdfs.org/ns/void#>
+        CONSTRUCT {{
+            <xxx> ?p ?o .
+            <xxx> skos:member ?m .
+            ?m ?p2 ?o2 .
+        }}
+        WHERE {{
+            {{
+            <xxx> ?p ?o .
+            MINUS {{ <xxx> skos:member ?o . }}
+            }}
+            {{
+            <xxx> skos:member ?m .
+            ?m a skos:Concept .
+            ?m ?p2 ?o2 .
+            FILTER ( ?p2 != skos:broaderTransitive )
+            FILTER ( ?p2 != skos:narrowerTransitive )
+            FILTER ( ?p2 != skos:broader )
+            FILTER ( ?p2 != skos:narrower )
+            FILTER ( ?p2 != skos:related )
+            FILTER ( ?p2 != owl:sameAs )
+            {filter_text}   
+            }}
+        }}
+    """.replace(
+        "xxx", instance_uri
+    )
+    return query
