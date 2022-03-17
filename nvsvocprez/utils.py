@@ -1,11 +1,14 @@
 import logging
-from typing import Dict, Literal
+from typing import Dict, List, Literal
 import httpx
 import config
 from config import DATA_URI, ORDS_ENDPOINT_URL
 import pickle
 from pathlib import Path
 import requests
+from pyldapi.data import RDF_MEDIATYPES
+
+from pyldapi.profile import Profile
 
 
 
@@ -251,3 +254,94 @@ def get_alt_profiles() -> Dict:
     except requests.RequestException as exc: 
         logging.error("Failed to retrieve alternate profile information from %s.\n%s", url, exc)
         return {}   # Return blank list to avoid internal server error.
+    
+    
+    
+def get_alt_profile_objects(
+    collection:Dict, 
+    alt_profiles:Dict, 
+    media_types:List=RDF_MEDIATYPES, 
+    default_mediatype:str="text/turtle"
+    ) -> Dict:
+    """Generate Profile objects for all alt profiles.
+    
+    Args:
+        collection (Dict): Dict representing collection data.
+        alt_profiles(Dict): Dict of alt profiles { uri : {profile_data}, ...}.
+        media_types (List[str]): List of mediatypes for alt profiles.
+        default_mediatype (str): Default media type for alt profiles.
+        
+    Returns:
+        Dict: Dict of Profile objects representing each alternate profile.
+            { profile_name: ProfileObject, ... }
+    """
+    profiles = {}
+    for url, alt in alt_profiles.items():
+        if "conforms_to" in collection and url in collection["conforms_to"]["value"]:
+            p = Profile(
+                uri=url,
+                id=alt['token'],
+                label=alt['name'],
+                comment=alt['vocprezdesc'],
+                mediatypes=media_types,
+                default_mediatype=default_mediatype,
+                languages=["en"],
+                default_language="en",
+            )
+        profiles[alt['token']] = p
+    return profiles
+
+
+def get_collection_query(profile: str, instance_uri: str, exclude_profiles: list):
+    """Method to generate a query for the collections page excluding certain profiles.
+    
+    Args:
+        profile (str): Profile name (e.g. 'nvs', 'puv', 'iadopt').
+        insance_uri (str): Instance URI.
+        exclude_profiles: List of profile URI's to be excluded from query.
+    Returns:
+        str: The construncted sparql query.
+    """
+    filter_text = ""
+    if profile != "nvs":
+        filter_text += """
+            FILTER ( ?p2 != skos:broader )
+            FILTER ( ?p2 != skos:narrower )
+            FILTER ( ?p2 != skos:related )
+            FILTER ( ?p2 != owl:sameAs )
+        """
+    
+    for profile in exclude_profiles:
+        # Build filter text.
+        filter_text += f'FILTER (!STRSTARTS(STR(?p2), "{profile}"))\n'
+    
+    query = f"""
+        PREFIX dc: <http://purl.org/dc/terms/>
+        PREFIX dce: <http://purl.org/dc/elements/1.1/>
+        PREFIX grg: <http://www.isotc211.org/schemas/grg/>
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        PREFIX pav: <http://purl.org/pav/>
+        PREFIX puv: <https://w3id.org/env/puv#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        PREFIX void: <http://rdfs.org/ns/void#>
+        CONSTRUCT {{
+            <{instance_uri}> ?p ?o .
+            <{instance_uri}> skos:member ?m .
+            ?m ?p2 ?o2 .
+        }}
+        WHERE {{
+            {{
+            <{instance_uri}> ?p ?o .
+            MINUS {{ <{instance_uri}> skos:member ?o . }}
+            }}
+            {{
+            <{instance_uri}> skos:member ?m .
+            ?m a skos:Concept .
+            ?m ?p2 ?o2 .
+            FILTER ( ?p2 != skos:broaderTransitive )
+            FILTER ( ?p2 != skos:narrowerTransitive )
+            {filter_text}   
+            }}
+        }}
+    """
+    return query
