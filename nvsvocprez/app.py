@@ -17,7 +17,7 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles
+from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_alt_profile_objects, get_collection_query
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
@@ -513,27 +513,14 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
     class CollectionRenderer(Renderer):
         def __init__(self):
+            self.alt_profiles = get_alt_profiles()
             self.instance_uri = f"{DATA_URI}/collection/{collection_id}/current/"
 
             profiles = {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd}
             for collection in cache_return(collections_or_conceptschemes="collections"):
                 if collection["id"]["value"] == collection_id:
                     if collection.get("conforms_to"):
-                        if (
-                            "https://w3id.org/env/puv" in collection["conforms_to"]["value"]
-                        ):
-                            p = Profile(
-                                uri="https://w3id.org/env/puv",
-                                id="puv",
-                                label="Parameter Use Vocabulary",
-                                comment="A simple ontology which implements the Parameter Usage Vocabulary semantic model, as described at "
-                                "https://github.com/nvs-vocabs/P01",
-                                mediatypes=RDF_MEDIATYPES,
-                                default_mediatype="text/turtle",
-                                languages=["en"],
-                                default_language="en",
-                            )
-                            profiles["puv"] = p
+                        profiles.update(get_alt_profile_objects(collection, self.alt_profiles))
 
             super().__init__(
                 request,
@@ -609,6 +596,9 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                 return False
 
         def render(self):
+            logging.info(f"profile is: {self.profile}")
+            self.excluded_profiles = [profile for profile, alt in self.alt_profiles.items() if alt['token'] != self.profile]
+            
             if self.profile == "nvs":
                 if self.mediatype == "text/html":
                     collection = self._get_collection()
@@ -634,46 +624,13 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": self.profile,
-                            "alt_profiles": get_alt_profiles()
+                            "alt_profiles": self.alt_profiles
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
-                    q = """
-                        PREFIX dc: <http://purl.org/dc/terms/>
-                        PREFIX dce: <http://purl.org/dc/elements/1.1/>
-                        PREFIX grg: <http://www.isotc211.org/schemas/grg/>
-                        PREFIX owl: <http://www.w3.org/2002/07/owl#>
-                        PREFIX pav: <http://purl.org/pav/>
-                        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-                        PREFIX void: <http://rdfs.org/ns/void#>
-                        
-                        CONSTRUCT {
-                          <xxx> ?p ?o .                           
-                          <xxx> skos:member ?m .                        
-                          ?m ?p2 ?o2 .              
-                        }
-                        WHERE {
-                          {
-                            <xxx> ?p ?o .                          
-                            MINUS { <xxx> skos:member ?o . }
-                          }
-                          
-                          {
-                            <xxx> skos:member ?m .
-                            ?m a skos:Concept .
-                        
-                            ?m ?p2 ?o2 .
-                        
-                            FILTER ( ?p2 != skos:broaderTransitive )
-                            FILTER ( ?p2 != skos:narrowerTransitive )
-                          }
-                          
-                          FILTER (!STRSTARTS(STR(?p2), "https://w3id.org/env/puv#"))
-                        }
-                        """.replace(
-                        "xxx", self.instance_uri
-                    )
-                    return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
+                    query = get_collection_query(self.profile, self.instance_uri, self.excluded_profiles)
+                    logging.info(query)
+                    return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
             elif self.profile == "dd":
                 q = """
                     PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -749,43 +706,11 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                     "xxx", self.instance_uri
                 )
                 return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
-            elif self.profile == "puv":
-                # only RDF Media Types
-                q = """
-                    PREFIX dc: <http://purl.org/dc/terms/>
-                    PREFIX dce: <http://purl.org/dc/elements/1.1/>
-                    PREFIX grg: <http://www.isotc211.org/schemas/grg/>
-                    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-                    PREFIX pav: <http://purl.org/pav/>
-                    PREFIX puv: <https://w3id.org/env/puv#>
-                    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-                    PREFIX void: <http://rdfs.org/ns/void#>
-
-                    CONSTRUCT {
-                      <xxx> ?p ?o .                           
-                      <xxx> skos:member ?m .                        
-                      ?m ?p2 ?o2 .              
-                    }
-                    WHERE {
-                      {
-                        <xxx> ?p ?o .                          
-                        MINUS { <xxx> skos:member ?o . }
-                      }
-
-                      {
-                        <xxx> skos:member ?m .
-                        ?m a skos:Concept .
-
-                        ?m ?p2 ?o2 .
-
-                        FILTER ( ?p2 != skos:broaderTransitive )
-                        FILTER ( ?p2 != skos:narrowerTransitive )
-                      }
-                    }
-                    """.replace(
-                    "xxx", self.instance_uri
-                )
-                return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
+            else: # alt profiles.
+                
+                query = get_collection_query(self.profile, self.instance_uri, self.excluded_profiles)
+                logging.info(query)
+                return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
 
             alt = super().render()
             if alt is not None:
@@ -1263,6 +1188,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
     class CollectionRenderer(Renderer):
         def __init__(self):
             self.instance_uri = f"{DATA_URI}/collection/P07/current/"
+            self.alt_profiles = get_alt_profiles()
 
             super().__init__(
                 request,
@@ -1363,7 +1289,7 @@ def standard_name(request: Request, acc_dep_or_concept: str = None):
                             "uri": self.instance_uri,
                             "collection": collection,
                             "profile_token": "nvs",
-                            "alt_profiles": get_alt_profiles()
+                            "alt_profiles": self.alt_profiles
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
