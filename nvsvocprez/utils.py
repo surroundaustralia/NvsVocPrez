@@ -288,7 +288,7 @@ def get_alt_profile_objects(
                 languages=["en"],
                 default_language="en",
             )
-        profiles[alt['token']] = p
+            profiles[alt['token']] = p
     return profiles
 
 
