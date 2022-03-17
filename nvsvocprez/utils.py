@@ -287,16 +287,25 @@ def get_alt_profile_objects(collection: Dict, alt_profiles: Dict) -> Dict:
     return profiles
 
 
-def get_collection_query(instance_uri: str, exclude_profiles: list):
+def get_collection_query(profile: str, instance_uri: str, exclude_profiles: list):
     """Method to generate a query for the collections page excluding certain profiles.
     
     Args:
+        profile (str): Profile name (e.g. 'nvs', 'puv', 'iadopt').
         insance_uri (str): Instance URI.
         exclude_profiles: List of profile URI's to be excluded from query.
     Returns:
         str: The construncted sparql query.
     """
     filter_text = ""
+    if profile != "nvs":
+        filter_text += """
+            FILTER ( ?p2 != skos:broader )
+            FILTER ( ?p2 != skos:narrower )
+            FILTER ( ?p2 != skos:related )
+            FILTER ( ?p2 != owl:sameAs )
+        """
+    
     for profile in exclude_profiles:
         # Build filter text.
         filter_text += f'FILTER (!STRSTARTS(STR(?p2), "{profile}"))\n'
@@ -326,10 +335,6 @@ def get_collection_query(instance_uri: str, exclude_profiles: list):
             ?m ?p2 ?o2 .
             FILTER ( ?p2 != skos:broaderTransitive )
             FILTER ( ?p2 != skos:narrowerTransitive )
-            FILTER ( ?p2 != skos:broader )
-            FILTER ( ?p2 != skos:narrower )
-            FILTER ( ?p2 != skos:related )
-            FILTER ( ?p2 != owl:sameAs )
             {filter_text}   
             }}
         }}

@@ -628,7 +628,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
-                    query = get_collection_query(self.instance_uri, self.excluded_profiles)
+                    query = get_collection_query(self.profile, self.instance_uri, self.excluded_profiles)
                     logging.info(query)
                     return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
             elif self.profile == "dd":
@@ -708,7 +708,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                 return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             else: # alt profiles.
                 
-                query = get_collection_query(self.instance_uri, self.excluded_profiles)
+                query = get_collection_query(self.profile, self.instance_uri, self.excluded_profiles)
                 logging.info(query)
                 return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
 
