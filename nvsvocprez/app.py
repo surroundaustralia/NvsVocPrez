@@ -1815,7 +1815,7 @@ class ConceptRenderer(Renderer):
         exclude_filters = ""
         exclude_profiles = [alt["url"] for alt in self.alt_profiles.values() if alt["token"] != self.profile]
         for ep in exclude_profiles:
-            exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), \"{ep}\"))\n'
+            exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), "{ep}"))\n'
 
         q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
