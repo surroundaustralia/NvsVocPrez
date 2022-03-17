@@ -1462,19 +1462,18 @@ class ConceptRenderer(Renderer):
             "sdo": sdo,
         }
 
-        def _is_collection_puv():
-            collection_uri = self.instance_uri.split("/current/")[0] + "/current/"
-            for collection in cache_return(collections_or_conceptschemes="collections"):
-                if collection["uri"]["value"] == collection_uri:
-                    if (
-                        collection.get("conforms_to")
-                        and "https://w3id.org/env/puv" in collection["conforms_to"]["value"]
-                    ):
-                        return True
-            return False
-
-        if _is_collection_puv():
-            concept_profiles["puv"] = puv
+        self.alt_profiles = get_alt_profiles()
+        collection_uri = self.instance_uri.split("/current/")[0] + "/current/"
+        for collection in cache_return(collections_or_conceptschemes="collections"):
+            if collection["uri"]["value"] == collection_uri:
+                concept_profiles.update(
+                    get_alt_profile_objects(
+                        collection,
+                        self.alt_profiles,
+                        media_types=["text/html"] + RDF_MEDIATYPES,
+                        default_mediatype="text/html"
+                    )
+                )
 
         super().__init__(request, self.instance_uri, concept_profiles, "nvs")
 
@@ -1683,7 +1682,11 @@ class ConceptRenderer(Renderer):
         return templates.TemplateResponse("concept.html", context=context)
 
     def _render_nvs_rdf(self):
-        q = """
+        exclude_filters = ""
+        for profile in self.alt_profiles:
+            exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{profile}"))\n'
+
+        q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
             PREFIX dce: <http://purl.org/dc/elements/1.1/>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -1693,31 +1696,29 @@ class ConceptRenderer(Renderer):
             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
             PREFIX void: <http://rdfs.org/ns/void#>
 
-            CONSTRUCT {
-              <xxx> ?p ?o .
+            CONSTRUCT {{
+              <{self.instance_uri}> ?p ?o .
 
               # remove provenance, for now
               # ?s ?p2 ?o2 .              
-              # ?s rdf:subject <xxx> ;
+              # ?s rdf:subject <{self.instance_uri}> ;
               #   prov:has_provenance ?m .              
-            }
-            WHERE {
-                <xxx> ?p ?o .
+            }}
+            WHERE {{
+                <{self.instance_uri}> ?p ?o .
 
                 # remove provenance, for now
-                # OPTIONAL {
-                #     ?s rdf:subject <xxx> ;
+                # OPTIONAL {{
+                #     ?s rdf:subject <{self.instance_uri}> ;
                 #        prov:has_provenance ?m .
                 #         
-                #     # { ?s ?p2 ?o2 }
-                # }
+                #     # {{ ?s ?p2 ?o2 }}
+                # }}
 
-                # exclude PUV properties from NVS view
-                FILTER (!STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
-            }        
-            """.replace(
-            "xxx", self.instance_uri
-        )
+                # exclude altprof properties from NVS view
+                {exclude_filters}
+            }}
+        """
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def _render_skos_rdf(self):
@@ -1810,8 +1811,13 @@ class ConceptRenderer(Renderer):
         )
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
-    def _render_puv_rdf(self):
-        q = """
+    def _render_profile_rdf(self):
+        exclude_filters = ""
+        exclude_profiles = [alt["url"] for alt in self.alt_profiles.values() if alt["token"] != self.profile]
+        for ep in exclude_profiles:
+            exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), "{ep}"))\n'
+
+        q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
             PREFIX dce: <http://purl.org/dc/elements/1.1/>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -1822,21 +1828,25 @@ class ConceptRenderer(Renderer):
             PREFIX void: <http://rdfs.org/ns/void#>
             
             PREFIX puv: <https://w3id.org/env/puv#>
-            CONSTRUCT {
-              <xxx> ?p ?o .
-            }
-            WHERE {
-              <xxx> ?p ?o .
-
-              # include only PUV properties
-              # FILTER (STRSTARTS(STR(?p), "https://w3id.org/env/puv#"))
-            }
-            """.replace(
-            "xxx", self.instance_uri
-        )
+            CONSTRUCT {{
+              <{self.instance_uri}> ?p ?o .
+            }}
+            WHERE {{
+              <{self.instance_uri}> ?p ?o .
+              FILTER ( ?p != skos:broaderTransitive )
+              FILTER ( ?p != skos:narrowerTransitive )
+              FILTER ( ?p != skos:broader )
+              FILTER ( ?p != skos:narrower )
+              FILTER ( ?p != skos:related )
+              FILTER ( ?p != owl:sameAs )
+              # exclude other properties from altprof
+              {exclude_filters}
+            }}
+        """
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def render(self):
+        alt_profile_tokens = [alt["token"] for alt in self.alt_profiles.values()]
         if self.profile == "nvs":
             if (
                 self.mediatype in RDF_MEDIATYPES
@@ -1851,12 +1861,12 @@ class ConceptRenderer(Renderer):
             return self._render_vocpub_rdf()
         elif self.profile == "sdo":
             return self._render_sdo_rdf()
-        elif self.profile == "puv":
+        elif self.profile in alt_profile_tokens:
             if (
                 self.mediatype in RDF_MEDIATYPES
                 or self.mediatype in Renderer.RDF_SERIALIZER_TYPES_MAP
             ):
-                return self._render_puv_rdf()
+                return self._render_profile_rdf()
             else:
                 return self._render_nvs_or_puv_html()
 
