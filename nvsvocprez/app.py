@@ -513,7 +513,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
     class CollectionRenderer(Renderer):
         def __init__(self):
-            self. alt_profiles = get_alt_profiles()
+            self.alt_profiles = get_alt_profiles()
             self.instance_uri = f"{DATA_URI}/collection/{collection_id}/current/"
 
             profiles = {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd}

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Literal
+from typing import Dict, List, Literal
 import httpx
 import config
 from config import DATA_URI, ORDS_ENDPOINT_URL
@@ -257,12 +257,19 @@ def get_alt_profiles() -> Dict:
     
     
     
-def get_alt_profile_objects(collection: Dict, alt_profiles: Dict) -> Dict:
+def get_alt_profile_objects(
+    collection:Dict, 
+    alt_profiles:Dict, 
+    media_types:List=RDF_MEDIATYPES, 
+    default_mediatype:str="text/turtle"
+    ) -> Dict:
     """Generate Profile objects for all alt profiles.
     
     Args:
         collection (Dict): Dict representing collection data.
         alt_profiles(Dict): Dict of alt profiles { uri : {profile_data}, ...}.
+        media_types (List[str]): List of mediatypes for alt profiles.
+        default_mediatype (str): Default media type for alt profiles.
         
     Returns:
         Dict: Dict of Profile objects representing each alternate profile.
@@ -270,16 +277,14 @@ def get_alt_profile_objects(collection: Dict, alt_profiles: Dict) -> Dict:
     """
     profiles = {}
     for url, alt in alt_profiles.items():
-        if (
-            url in collection["conforms_to"]["value"]
-        ):
+        if "conforms_to" in collection and url in collection["conforms_to"]["value"]:
             p = Profile(
                 uri=url,
                 id=alt['token'],
                 label=alt['name'],
                 comment=alt['vocprezdesc'],
-                mediatypes=RDF_MEDIATYPES,
-                default_mediatype="text/turtle",
+                mediatypes=media_types,
+                default_mediatype=default_mediatype,
                 languages=["en"],
                 default_language="en",
             )
@@ -320,17 +325,17 @@ def get_collection_query(profile: str, instance_uri: str, exclude_profiles: list
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX void: <http://rdfs.org/ns/void#>
         CONSTRUCT {{
-            <xxx> ?p ?o .
-            <xxx> skos:member ?m .
+            <{instance_uri}> ?p ?o .
+            <{instance_uri}> skos:member ?m .
             ?m ?p2 ?o2 .
         }}
         WHERE {{
             {{
-            <xxx> ?p ?o .
-            MINUS {{ <xxx> skos:member ?o . }}
+            <{instance_uri}> ?p ?o .
+            MINUS {{ <{instance_uri}> skos:member ?o . }}
             }}
             {{
-            <xxx> skos:member ?m .
+            <{instance_uri}> skos:member ?m .
             ?m a skos:Concept .
             ?m ?p2 ?o2 .
             FILTER ( ?p2 != skos:broaderTransitive )
@@ -338,7 +343,5 @@ def get_collection_query(profile: str, instance_uri: str, exclude_profiles: list
             {filter_text}   
             }}
         }}
-    """.replace(
-        "xxx", instance_uri
-    )
+    """
     return query
