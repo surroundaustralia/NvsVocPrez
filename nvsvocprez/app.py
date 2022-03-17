@@ -1536,14 +1536,14 @@ class ConceptRenderer(Renderer):
             "sdo": sdo,
         }
 
-        altprof_data = get_alt_profiles()
+        self.alt_profiles = get_alt_profiles()
         collection_uri = self.instance_uri.split("/current/")[0] + "/current/"
         for collection in cache_return(collections_or_conceptschemes="collections"):
             if collection["uri"]["value"] == collection_uri:
                 if collection.get("conforms_to"):
                     conforms_to = collection["conforms_to"]["value"].split(",")
                     for profile in conforms_to:
-                        alt_data = altprof_data.get(profile, None)
+                        alt_data = self.alt_profiles.get(profile, None)
                         if not alt_data or alt_data["token"] in concept_profiles:
                             continue
                         concept_profiles[alt_data["token"]] = Profile(
@@ -1764,12 +1764,11 @@ class ConceptRenderer(Renderer):
         return templates.TemplateResponse("concept.html", context=context)
 
     def _render_nvs_rdf(self):
-        exclude_filters = []
-        alt_profiles = get_alt_profiles()
-        for profile in alt_profiles:
-            exclude_filters.append(f'FILTER (!STRSTARTS(STR(?p), "{profile}"))')
+        exclude_filters = ""
+        for profile in self.alt_profiles:
+            exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{profile}"))\n'
 
-        q = """
+        q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
             PREFIX dce: <http://purl.org/dc/elements/1.1/>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -1779,33 +1778,29 @@ class ConceptRenderer(Renderer):
             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
             PREFIX void: <http://rdfs.org/ns/void#>
 
-            CONSTRUCT {
-              <xxx> ?p ?o .
+            CONSTRUCT {{
+              <{self.instance_uri}> ?p ?o .
 
               # remove provenance, for now
               # ?s ?p2 ?o2 .              
-              # ?s rdf:subject <xxx> ;
+              # ?s rdf:subject <{self.instance_uri}> ;
               #   prov:has_provenance ?m .              
-            }
-            WHERE {
-                <xxx> ?p ?o .
+            }}
+            WHERE {{
+                <{self.instance_uri}> ?p ?o .
 
                 # remove provenance, for now
-                # OPTIONAL {
-                #     ?s rdf:subject <xxx> ;
+                # OPTIONAL {{
+                #     ?s rdf:subject <{self.instance_uri}> ;
                 #        prov:has_provenance ?m .
                 #         
-                #     # { ?s ?p2 ?o2 }
-                # }
+                #     # {{ ?s ?p2 ?o2 }}
+                # }}
 
                 # exclude altprof properties from NVS view
-                <EXCLUDE_FILTERS>
-            }        
-            """.replace(
-            "xxx", self.instance_uri
-        ).replace(
-            "<EXCLUDE_FILTERS>", "\n".join(exclude_filters)
-        )
+                {exclude_filters}
+            }}
+        """
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def _render_skos_rdf(self):
@@ -1899,14 +1894,12 @@ class ConceptRenderer(Renderer):
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def _render_profile_rdf(self):
-        exclude_filters = []
-        alt_profiles = get_alt_profiles()
-        for alt in alt_profiles.values():
-            if alt["token"] != self.profile:
-                alt_url = alt["url"]
-                exclude_filters.append(f'FILTER (!STRSTARTS(STR(?p), "{alt_url}"))')
+        exclude_filters = ""
+        exclude_profiles = [alt["url"] for alt in self.alt_profiles.values() if alt["token"] != self.profile]
+        for ep in exclude_profiles:
+            exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), \"{ep}\"))\n'
 
-        q = """
+        q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
             PREFIX dce: <http://purl.org/dc/elements/1.1/>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -1917,11 +1910,11 @@ class ConceptRenderer(Renderer):
             PREFIX void: <http://rdfs.org/ns/void#>
             
             PREFIX puv: <https://w3id.org/env/puv#>
-            CONSTRUCT {
-              <xxx> ?p ?o .
-            }
-            WHERE {
-              <xxx> ?p ?o .
+            CONSTRUCT {{
+              <{self.instance_uri}> ?p ?o .
+            }}
+            WHERE {{
+              <{self.instance_uri}> ?p ?o .
               FILTER ( ?p != skos:broaderTransitive )
               FILTER ( ?p != skos:narrowerTransitive )
               FILTER ( ?p != skos:broader )
@@ -1929,18 +1922,13 @@ class ConceptRenderer(Renderer):
               FILTER ( ?p != skos:related )
               FILTER ( ?p != owl:sameAs )
               # exclude other properties from altprof
-              <EXCLUDE_FILTERS>
-            }
-            """.replace(
-            "xxx", self.instance_uri
-        ).replace(
-            "<EXCLUDE_FILTERS>", "\n".join(exclude_filters)
-        )
+              {exclude_filters}
+            }}
+        """
         return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
 
     def render(self):
-        alt_profiles = get_alt_profiles()
-        alt_profile_tokens = [alt["token"] for alt in alt_profiles.values()]
+        alt_profile_tokens = [alt["token"] for alt in self.alt_profiles.values()]
         if self.profile == "nvs":
             if (
                 self.mediatype in RDF_MEDIATYPES
