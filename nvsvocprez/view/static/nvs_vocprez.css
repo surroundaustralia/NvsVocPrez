@@ -532,6 +532,8 @@ a.format-button {
     text-align:center;
     vertical-align:middle;
     font-size:80%;
+    white-space: nowrap;
+    line-height: 27px;
 }
 
 table.vocs {
