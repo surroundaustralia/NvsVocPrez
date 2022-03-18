@@ -597,6 +597,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
         def render(self):
             logging.info(f"profile is: {self.profile}")
+            alt_profile_tokens = [alt["token"] for alt in self.alt_profiles.values()]
             self.excluded_profiles = [profile for profile, alt in self.alt_profiles.items() if alt['token'] != self.profile]
             
             if self.profile == "nvs":
@@ -706,7 +707,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                     "xxx", self.instance_uri
                 )
                 return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
-            else: # alt profiles.
+            elif self.profile in alt_profile_tokens:
                 
                 query = get_collection_query(self.profile, self.instance_uri, self.excluded_profiles)
                 logging.info(query)
