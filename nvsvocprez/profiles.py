@@ -99,15 +99,3 @@ sdo = Profile(
     languages=["en"],
     default_language="en",
 )
-
-puv = Profile(
-    uri="https://w3id.org/env/puv",
-    id="puv",
-    label="Parameter Use Vocabulary",
-    comment="A simple ontology which implements the Parameter Usage Vocabulary semantic model, as described at "
-    "https://github.com/nvs-vocabs/P01",
-    mediatypes=["text/html"] + RDF_MEDIATYPES,
-    default_mediatype="text/html",
-    languages=["en"],
-    default_language="en",
-)

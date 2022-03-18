@@ -16,7 +16,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
-from profiles import void, nvs, skos, dd, vocpub, dcat, puv, sdo
+from profiles import void, nvs, skos, dd, vocpub, dcat, sdo
 from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_alt_profile_objects, get_collection_query
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
@@ -1489,40 +1489,52 @@ class ConceptRenderer(Renderer):
                 status_code=500,
             )
 
-    def _render_nvs_or_puv_html(self):
-        q = """
+    def _render_nvs_or_profile_html(self):
+        exclude_filters = ""
+        if self.profile != "nvs":
+            exclude_filters += """
+                FILTER ( ?p != skos:broader )
+                FILTER ( ?p != skos:narrower )
+                FILTER ( ?p != skos:related )
+                FILTER ( ?p != owl:sameAs )
+            """
+        exclude_profiles = [alt["url"] for alt in self.alt_profiles.values() if alt["token"] != self.profile]
+        for ep in exclude_profiles:
+            exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{ep}"))\n'
+
+        q = f"""
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
             SELECT DISTINCT ?p ?o ?o_label ?o_notation ?collection_uri ?collection_systemUri ?collection_label
-            WHERE {
-              BIND (<xxx> AS ?concept)
+            WHERE {{
+              BIND (<{self.instance_uri}> AS ?concept)
               ?concept ?p ?o .
             
+              FILTER ( ?p != skos:broaderTransitive )
+              FILTER ( ?p != skos:narrowerTransitive )
+              {exclude_filters}
               FILTER(!isLiteral(?o) || lang(?o) = "en" || lang(?o) = "")
             
-              OPTIONAL {
+              OPTIONAL {{
                 ?o skos:prefLabel ?o_label ;
                    skos:notation ?o_notation .
                 FILTER(!isLiteral(?o_label) || lang(?o_label) = "en" || lang(?o_label) = "")
-              }
+              }}
             
               BIND(
                 IF(
                   CONTAINS(STR(?concept), "standard_name"), 
-                    <DATA_URI/standard_name/>,
+                    <{DATA_URI}/standard_name/>,
                     IRI(CONCAT(STRBEFORE(STR(?concept), "/current/"), "/current/"))
                 )
                 AS ?collection_uri
               )
-              BIND (REPLACE(STR(?collection_uri), "DATA_URI", "") AS ?collection_systemUri)
-              OPTIONAL {?collection_uri skos:prefLabel ?x }
+              BIND (REPLACE(STR(?collection_uri), "{DATA_URI}", "") AS ?collection_systemUri)
+              OPTIONAL {{?collection_uri skos:prefLabel ?x }}
               BIND (COALESCE(?x, "Climate and Forecast Standard Names") AS ?collection_label)
-            }         
-            """.replace(
-            "xxx", self.instance_uri
-        ).replace(
-            "DATA_URI", DATA_URI
-        )
+            }}         
+        """
         r = sparql_query(q)
         if not r[0]:
             return PlainTextResponse(
@@ -1531,42 +1543,9 @@ class ConceptRenderer(Renderer):
             )
 
         PAV = Namespace("http://purl.org/pav/")
-        PUV = Namespace("https://w3id.org/env/puv#")
         STATUS = Namespace("http://www.opengis.net/def/metamodel/ogc-na/")
 
         props = {
-            str(PUV.analyticalMethod): {"label": "analytical method", "group": "puv"},
-            str(PUV.biologicalObject): {
-                "label": "biological object of interest",
-                "group": "puv",
-            },
-            str(PUV.chemicalObject): {
-                "label": "chemical object of interest",
-                "group": "puv",
-            },
-            str(PUV.dataProcessing): {
-                "label": "data processing method",
-                "group": "puv",
-            },
-            str(PUV.isComposedOf): {"label": "is composed of", "group": "puv"},
-            str(PUV.matrix): {"label": "matrix", "group": "puv"},
-            str(PUV.matrixRelationship): {
-                "label": "measurement-matrix relationship",
-                "group": "puv",
-            },
-            str(PUV.method): {"label": "method", "group": "puv"},
-            str(PUV.objectOfInterest): {"label": "object of interest", "group": "puv"},
-            str(PUV.physicalObject): {
-                "label": "physical object of interest",
-                "group": "puv",
-            },
-            str(PUV.property): {"label": "property", "group": "puv"},
-            str(PUV.samplePreparation): {
-                "label": "sample-preparation method",
-                "group": "puv",
-            },
-            str(PUV.statistic): {"label": "statistic", "group": "puv"},
-            str(PUV.uom): {"label": "unit-of-measurement", "group": "puv"},
             str(DCTERMS.contributor): {"label": "Contributor", "group": "agent"},
             str(DCTERMS.creator): {"label": "Creator", "group": "agent"},
             str(DCTERMS.publisher): {"label": "Publisher", "group": "agent"},
@@ -1616,7 +1595,7 @@ class ConceptRenderer(Renderer):
             "definition": None,
             "date": None,
             "altLabels": [],
-            "puv": [],
+            "profile_properties": [],
             "annotation": [],
             "agent": [],
             "related": [],
@@ -1627,6 +1606,13 @@ class ConceptRenderer(Renderer):
 
         def make_predicate_label_from_uri(uri):
             return uri.split("#")[-1].split("/")[-1]
+
+        alt_profiles = get_alt_profiles()
+        profile_url = None
+        for ap in alt_profiles.values():
+            if ap["token"] == self.profile:
+                profile_url = ap["url"]
+                context["profile"] = ap
 
         for x in r[1]:
             p = x["p"]["value"]
@@ -1653,6 +1639,13 @@ class ConceptRenderer(Renderer):
                     context[props[p]["group"]].append(
                         DisplayProperty(p, props[p]["label"], o, o_label, o_notation)
                     )
+            elif profile_url and p.startswith(profile_url):
+                p_label = p[len(profile_url):]
+                if p_label[0] == "#":
+                    p_label = p_label[1:]
+                context["profile_properties"].append(
+                    DisplayProperty(p, p_label, o, o_label, o_notation)
+                )
             else:
                 context["other"].append(
                     DisplayProperty(p, make_predicate_label_from_uri(p), o, o_label)
@@ -1667,8 +1660,8 @@ class ConceptRenderer(Renderer):
                 last_pred_html = this_predicate_html
 
         context["altLabels"].sort()
-        context["puv"].sort(key=lambda x: x.predicate_html)
-        clean_prop_list_labels(context["puv"])
+        context["profile_properties"].sort(key=lambda x: x.predicate_html)
+        clean_prop_list_labels(context["profile_properties"])
         context["agent"].sort(key=lambda x: x.predicate_html)
         clean_prop_list_labels(context["agent"])
         context["annotation"].sort(key=lambda x: x.predicate_html)
@@ -1854,7 +1847,7 @@ class ConceptRenderer(Renderer):
             ):
                 return self._render_nvs_rdf()
             else:
-                return self._render_nvs_or_puv_html()
+                return self._render_nvs_or_profile_html()
         elif self.profile == "skos":
             return self._render_skos_rdf()
         elif self.profile == "vocpub":
@@ -1868,7 +1861,7 @@ class ConceptRenderer(Renderer):
             ):
                 return self._render_profile_rdf()
             else:
-                return self._render_nvs_or_puv_html()
+                return self._render_nvs_or_profile_html()
 
         alt = super().render()
         if alt is not None:
