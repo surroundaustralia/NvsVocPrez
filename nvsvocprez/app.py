@@ -1492,6 +1492,7 @@ class ConceptRenderer(Renderer):
 
     def _render_nvs_or_profile_html(self):
         exclude_filters = ""
+        prefixes = ""
         if self.profile != "nvs":
             exclude_filters += """
                 FILTER ( ?p != skos:broader )
@@ -1499,14 +1500,17 @@ class ConceptRenderer(Renderer):
                 FILTER ( ?p != skos:related )
                 FILTER ( ?p != owl:sameAs )
             """
-        exclude_profiles = [alt["url"] for alt in self.alt_profiles.values() if alt["token"] != self.profile]
-        for ep in exclude_profiles:
-            exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{ep}"))\n'
+        for alt in self.alt_profiles.values():
+            if alt["token"] != self.profile:
+                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), \"{alt["url"]}\"))\n'
+            else:
+                prefixes += f'PREFIX {alt["token"]}: <{alt["url"]}>'
 
         q = f"""
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            {prefixes}
             SELECT DISTINCT ?p ?o ?o_label ?o_notation ?collection_uri ?collection_systemUri ?collection_label
             WHERE {{
               BIND (<{self.instance_uri}> AS ?concept)
@@ -1807,9 +1811,12 @@ class ConceptRenderer(Renderer):
 
     def _render_profile_rdf(self):
         exclude_filters = ""
-        exclude_profiles = [alt["url"] for alt in self.alt_profiles.values() if alt["token"] != self.profile]
-        for ep in exclude_profiles:
-            exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), "{ep}"))\n'
+        prefixes = ""
+        for alt in self.alt_profiles.values():
+            if alt["token"] != self.profile:
+                exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), \"{alt["url"]}\"))\n'
+            else:
+                prefixes += f'PREFIX {alt["token"]}: <{alt["url"]}#>'
 
         q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
@@ -1820,8 +1827,8 @@ class ConceptRenderer(Renderer):
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
             PREFIX void: <http://rdfs.org/ns/void#>
-            
-            PREFIX puv: <https://w3id.org/env/puv#>
+            {prefixes}
+
             CONSTRUCT {{
               <{self.instance_uri}> ?p ?o .
             }}
