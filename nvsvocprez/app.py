@@ -1502,7 +1502,7 @@ class ConceptRenderer(Renderer):
             """
         for alt in self.alt_profiles.values():
             if alt["token"] != self.profile:
-                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), \"{alt["url"]}\"))\n'
+                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{alt["url"]}"))\n'
             else:
                 prefixes += f'PREFIX {alt["token"]}: <{alt["url"]}>'
 
@@ -1814,7 +1814,7 @@ class ConceptRenderer(Renderer):
         prefixes = ""
         for alt in self.alt_profiles.values():
             if alt["token"] != self.profile:
-                exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), \"{alt["url"]}\"))\n'
+                exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), "{alt["url"]}"))\n'
             else:
                 prefixes += f'PREFIX {alt["token"]}: <{alt["url"]}#>'
 
