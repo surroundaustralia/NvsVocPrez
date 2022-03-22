@@ -293,18 +293,22 @@ def get_alt_profile_objects(
     return profiles
 
 
-def get_collection_query(profile: str, instance_uri: str, exclude_profiles: list):
+def get_collection_query(profile: Profile, instance_uri: str, exclude_profiles: list):
     """Method to generate a query for the collections page excluding certain profiles.
     
     Args:
-        profile (str): Profile name (e.g. 'nvs', 'puv', 'iadopt').
+        profile_name (Profile): Profile object representing the current profile.
         insance_uri (str): Instance URI.
         exclude_profiles: List of profile URI's to be excluded from query.
     Returns:
         str: The construncted sparql query.
     """
+    
+    prefix_text = ""
     filter_text = ""
-    if profile != "nvs":
+    if profile.id != "nvs":
+        # Build prefix text.
+        prefix_text += f'PREFIX {profile.id}: <{profile.uri}#>'
         filter_text += """
             FILTER ( ?p2 != skos:broader )
             FILTER ( ?p2 != skos:narrower )
@@ -322,9 +326,9 @@ def get_collection_query(profile: str, instance_uri: str, exclude_profiles: list
         PREFIX grg: <http://www.isotc211.org/schemas/grg/>
         PREFIX owl: <http://www.w3.org/2002/07/owl#>
         PREFIX pav: <http://purl.org/pav/>
-        PREFIX puv: <https://w3id.org/env/puv#>
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX void: <http://rdfs.org/ns/void#>
+        {prefix_text}
         CONSTRUCT {{
             <{instance_uri}> ?p ?o .
             <{instance_uri}> skos:member ?m .
