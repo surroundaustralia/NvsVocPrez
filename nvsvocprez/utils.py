@@ -72,7 +72,7 @@ def cache_fill(
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX dcterms: <http://purl.org/dc/terms/>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            SELECT ?uri ?id ?systemUri ?prefLabel ?created ?issued ?modified ?creator ?publisher
+            SELECT ?uri ?id ?systemUri ?prefLabel ?created ?issued ?modified ?creator ?publisher ?license
             (GROUP_CONCAT(?conformsto;SEPARATOR=",") AS ?conforms_to) ?versionInfo ?description ?registermanager ?registerowner ?seeAlso
             WHERE {
                 ?uri a skos:Collection .
@@ -89,6 +89,7 @@ def cache_fill(
                 }
                 OPTIONAL { ?uri dcterms:creator ?creator }
                 OPTIONAL { ?uri dcterms:publisher ?publisher }
+                OPTIONAL { ?uri dcterms:license ?license }
                 OPTIONAL { ?uri dcterms:conformsTo ?conformsto }
                 OPTIONAL { ?uri owl:versionInfo ?versionInfo }
                 OPTIONAL { ?uri dcterms:description ?description .
@@ -101,7 +102,7 @@ def cache_fill(
                 }
                 OPTIONAL { ?uri rdfs:seeAlso ?seeAlso }
             }
-group by ?uri ?id ?systemUri ?prefLabel ?created ?issued ?modified ?creator ?publisher ?versionInfo ?description ?registermanager ?registerowner ?seeAlso
+group by ?uri ?id ?systemUri ?prefLabel ?created ?issued ?modified ?creator ?publisher ?license ?versionInfo ?description ?registermanager ?registerowner ?seeAlso
             ORDER BY ?prefLabel 
             """
 

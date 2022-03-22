@@ -60,6 +60,16 @@
               </td>
           </tr>
         {% endif %}
+        {% if collection.license is defined %}
+          <tr>
+            <th>
+              <a href="http://purl.org/dc/terms/license">License</a>
+            </th>
+            <td>
+              <a href="{{ collection.license.value }}">{{ collection.license.value }}</a>
+            </td>
+          </tr>
+        {% endif %}
     </table>
     </div>
     <div style="grid-column: 2; grid-row: 1;">
