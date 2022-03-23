@@ -498,6 +498,13 @@ def collection_no_current(request: Request, collection_id):
     return RedirectResponse(url=f"/collection/{collection_id}/current/")
 
 
+@api.get("/collection/{collection_id}/{version_id}")
+@api.get("/collection/{collection_id}/{version_id}/")
+@api.head("/collection/{collection_id}/{version_id}")
+@api.head("/collection/{collection_id}/{version_id}/")
+def collection_no_current(request: Request, collection_id, version_id):
+    return RedirectResponse(url=f"https://vocab.nerc.ac.uk/db2rdf/collection/{collection_id}/{version_id}/")
+
 @api.get("/collection/{collection_id}/current/")
 @api.get("/collection/{collection_id}/current/{acc_dep_or_concept}/")
 @api.head("/collection/{collection_id}/current/")
