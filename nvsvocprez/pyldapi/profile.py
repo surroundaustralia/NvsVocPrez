@@ -11,4 +11,4 @@ class Profile(BaseModel):
     default_mediatype: str  # the ID of one of those in the mediatypes list of tuples
     languages: List[str]
     default_language: str
-    ontologies: Dict[str, Dict] = {} # Dict of ontology objects assosciated with the profile view. Default to blank list.
+    ontologies: Dict[str, Dict] = {} # Dict of ontology objects assosciated with the profile view. Defaults to a blank dict.

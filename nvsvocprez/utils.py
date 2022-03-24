@@ -250,8 +250,8 @@ def get_ontologies() -> Dict:
     try:
         url = f"{ORDS_ENDPOINT_URL}/alexk/alexk/ontology"
         resp_json = requests.get(url).json()
-        ont_data_by_url = {ont["prefix"]: ont for ont in resp_json['items']}
-        return ont_data_by_url
+        ont_data_by_prefix = {ont["prefix"]: ont for ont in resp_json['items']}
+        return ont_data_by_prefix
     except requests.RequestException as exc: 
         logging.error("Failed to retrieve ontology information from %s.\n%s", url, exc)
         return {}   # Return blank dict to avoid internal server error.

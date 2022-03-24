@@ -17,13 +17,24 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_alt_profile_objects, get_collection_query, get_ontologies
+from utils import (
+    sparql_query, 
+    sparql_construct, 
+    cache_return, 
+    cache_clear, 
+    get_accepts,
+    exists_triple, 
+    get_alt_profiles, 
+    get_alt_profile_objects, 
+    get_collection_query, 
+    get_ontologies
+)
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
 from rdflib import Literal as RdfLiteral, Namespace
 from rdflib.namespace import DC, DCTERMS, ORG, OWL, RDF, RDFS, SKOS, VOID
-from profiles import Profile
+
 
 api_home_dir = Path(__file__).parent
 api = fastapi.FastAPI()
