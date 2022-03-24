@@ -239,28 +239,47 @@ def exists_triple(s: str):
   return True if bool(int(count)) else False
 
 
-def get_alt_profiles() -> Dict:
-    """Get alt profiles from livbodcsos ords endpoint.
+def get_ontologies() -> Dict:
+    """Get ontologies from livbodcsos ords endpoint.
     
-        Returns (Dict): Dict of parsed alt profile data. {[ alt_profile_url : {alt_profile_object}, ...]}.
+        Returns (Dict): Dict of parsed ontology data. {ontology_prefix : {ontology_object}, ...}.
     """
     if ORDS_ENDPOINT_URL is None:
         logging.error("Environment variable ORDS_ENDPOINT_URL is not set.")
         return {}
     try:
-        url = f"{ORDS_ENDPOINT_URL}/webtabsn/nvs/altprof"
+        url = f"{ORDS_ENDPOINT_URL}/ontology"
+        resp_json = requests.get(url).json()
+        ont_data_by_prefix = {ont["prefix"]: ont for ont in resp_json['items']}
+        return ont_data_by_prefix
+    except requests.RequestException as exc: 
+        logging.error("Failed to retrieve ontology information from %s.\n%s", url, exc)
+        return {}   # Return blank dict to avoid internal server error.
+
+
+def get_alt_profiles() -> Dict:
+    """Get alt profiles from livbodcsos ords endpoint.
+    
+        Returns (Dict): Dict of parsed alt profile data. {alt_profile_url : {alt_profile_object}, ...}.
+    """
+    if ORDS_ENDPOINT_URL is None:
+        logging.error("Environment variable ORDS_ENDPOINT_URL is not set.")
+        return {}
+    try:
+        #url = f"{ORDS_ENDPOINT_URL}/webtabsn/nvs/altprof"
+        url = f"{ORDS_ENDPOINT_URL}/altprof"
         resp_json = requests.get(url).json()
         altprof_data_by_url = {alt["url"]: alt for alt in resp_json['items']}
         return altprof_data_by_url
     except requests.RequestException as exc: 
         logging.error("Failed to retrieve alternate profile information from %s.\n%s", url, exc)
-        return {}   # Return blank list to avoid internal server error.
-    
+        return {}   # Return blank dict to avoid internal server error.
     
     
 def get_alt_profile_objects(
     collection:Dict, 
-    alt_profiles:Dict, 
+    alt_profiles:Dict,
+    ontologies: Dict, 
     media_types:List=RDF_MEDIATYPES, 
     default_mediatype:str="text/turtle"
     ) -> Dict:
@@ -269,6 +288,7 @@ def get_alt_profile_objects(
     Args:
         collection (Dict): Dict representing collection data.
         alt_profiles(Dict): Dict of alt profiles { uri : {profile_data}, ...}.
+        ontologies(Dict): Dict of ontologies { prefix : {ontology_data}, ...}.
         media_types (List[str]): List of mediatypes for alt profiles.
         default_mediatype (str): Default media type for alt profiles.
         
@@ -278,6 +298,7 @@ def get_alt_profile_objects(
     """
     profiles = {}
     for url, alt in alt_profiles.items():
+        ontology_dict = {ont: ontologies[ont] for ont in alt["ontology_prefix"].split(",") if ont in ontologies}
         if "conforms_to" in collection and url in collection["conforms_to"]["value"]:
             p = Profile(
                 uri=url,
@@ -288,18 +309,19 @@ def get_alt_profile_objects(
                 default_mediatype=default_mediatype,
                 languages=["en"],
                 default_language="en",
+                ontologies = ontology_dict
             )
             profiles[alt['token']] = p
     return profiles
 
 
-def get_collection_query(profile: Profile, instance_uri: str, exclude_profiles: list):
+def get_collection_query(profile: Profile, instance_uri: str, ontologies: Dict):
     """Method to generate a query for the collections page excluding certain profiles.
     
     Args:
         profile_name (Profile): Profile object representing the current profile.
         insance_uri (str): Instance URI.
-        exclude_profiles: List of profile URI's to be excluded from query.
+        ontologies: Dict of all ontologies. {ontology_prefix : {ontology_object}, ...}.
     Returns:
         str: The construncted sparql query.
     """
@@ -308,7 +330,8 @@ def get_collection_query(profile: Profile, instance_uri: str, exclude_profiles: 
     filter_text = ""
     if profile.id != "nvs":
         # Build prefix text.
-        prefix_text += f'PREFIX {profile.id}: <{profile.uri}#>'
+        for ontology, data in profile.ontologies.items():
+            prefix_text += f'PREFIX {data["prefix"]}: <{data["url"]}#>\n'
         filter_text += """
             FILTER ( ?p2 != skos:broader )
             FILTER ( ?p2 != skos:narrower )
@@ -316,9 +339,10 @@ def get_collection_query(profile: Profile, instance_uri: str, exclude_profiles: 
             FILTER ( ?p2 != owl:sameAs )
         """
     
-    for profile in exclude_profiles:
-        # Build filter text.
-        filter_text += f'FILTER (!STRSTARTS(STR(?p2), "{profile}"))\n'
+    for ontology, data in ontologies.items():
+        if ontology not in profile.ontologies:
+            # Build filter text.
+            filter_text += f'FILTER (!STRSTARTS(STR(?p2), "{data["url"]}"))\n'
     
     query = f"""
         PREFIX dc: <http://purl.org/dc/terms/>

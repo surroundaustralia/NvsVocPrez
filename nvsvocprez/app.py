@@ -17,13 +17,24 @@ from starlette.templating import Jinja2Templates
 from pyldapi.renderer import RDF_MEDIATYPES
 from pyldapi.data import RDF_FILE_EXTS
 from profiles import void, nvs, skos, dd, vocpub, dcat, sdo
-from utils import sparql_query, sparql_construct, cache_return, cache_clear, get_accepts, exists_triple, get_alt_profiles, get_alt_profile_objects, get_collection_query
+from utils import (
+    sparql_query, 
+    sparql_construct, 
+    cache_return, 
+    cache_clear, 
+    get_accepts,
+    exists_triple, 
+    get_alt_profiles, 
+    get_alt_profile_objects, 
+    get_collection_query, 
+    get_ontologies
+)
 from pyldapi import Renderer, ContainerRenderer, DisplayProperty
 from config import SYSTEM_URI, DATA_URI, PORT
 from rdflib import Graph, URIRef
 from rdflib import Literal as RdfLiteral, Namespace
 from rdflib.namespace import DC, DCTERMS, ORG, OWL, RDF, RDFS, SKOS, VOID
-from profiles import Profile
+
 
 api_home_dir = Path(__file__).parent
 api = fastapi.FastAPI()
@@ -514,13 +525,20 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
     class CollectionRenderer(Renderer):
         def __init__(self):
             self.alt_profiles = get_alt_profiles()
+            self.ontologies = get_ontologies()
             self.instance_uri = f"{DATA_URI}/collection/{collection_id}/current/"
 
             profiles = {"nvs": nvs, "skos": skos, "vocpub": vocpub, "dd": dd}
             for collection in cache_return(collections_or_conceptschemes="collections"):
                 if collection["id"]["value"] == collection_id:
                     if collection.get("conforms_to"):
-                        profiles.update(get_alt_profile_objects(collection, self.alt_profiles))
+                        profiles.update(
+                            get_alt_profile_objects(
+                                collection = collection,
+                                alt_profiles= self.alt_profiles, 
+                                ontologies = self.ontologies
+                            )
+                        )
 
             super().__init__(
                 request,
@@ -597,8 +615,8 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
 
         def render(self):
             logging.info(f"profile is: {self.profile}")
+            current_profile = self.profiles[self.profile]
             alt_profile_tokens = [alt["token"] for alt in self.alt_profiles.values()]
-            self.excluded_profiles = [profile for profile, alt in self.alt_profiles.items() if alt['token'] != self.profile]
             
             if self.profile == "nvs":
                 if self.mediatype == "text/html":
@@ -629,7 +647,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                         },
                     )
                 elif self.mediatype in RDF_MEDIATYPES:
-                    query = get_collection_query(self.profiles[self.profile], self.instance_uri, self.excluded_profiles)
+                    query = get_collection_query(current_profile, self.instance_uri, self.ontologies)
                     logging.info(query)
                     return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
             elif self.profile == "dd":
@@ -708,8 +726,7 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                 )
                 return self._render_sparql_response_rdf(sparql_construct(q, self.mediatype))
             elif self.profile in alt_profile_tokens:
-                
-                query = get_collection_query(self.profiles[self.profile], self.instance_uri, self.excluded_profiles)
+                query = get_collection_query(current_profile, self.instance_uri, self.ontologies)
                 logging.info(query)
                 return self._render_sparql_response_rdf(sparql_construct(query, self.mediatype))
 
