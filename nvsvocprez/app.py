@@ -617,6 +617,15 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                                 "message": "There was an error with accessing the Triplestore",
                             },
                         )
+        
+                    print("AAAAAAAAAAAAAAAAAAAAAAAAA")
+
+                    #print(self.profile)
+                    print(self.alt_profiles)
+                    #print(collection.conforms_to)
+
+                    print("AAAAAAAAAAAAAAAAAAAAAAAAA")
+
 
                     return templates.TemplateResponse(
                         "collection.html",
@@ -1677,6 +1686,32 @@ class ConceptRenderer(Renderer):
         clean_prop_list_labels(context["provenance"])
         context["other"].sort(key=lambda x: x.predicate_html)
         clean_prop_list_labels(context["other"])
+
+        q = f"""
+             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+             PREFIX dcterms: <http://purl.org/dc/terms/>
+             PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        
+             SELECT ?id ?systemUri
+             (GROUP_CONCAT(?conformsto;SEPARATOR=",") AS ?conforms_to)
+             WHERE {{
+                ?uri a skos:Collection .             
+                BIND (STRAFTER(STRBEFORE(STR(?uri), "/current/"), "/collection/") AS ?id)
+                BIND (STRAFTER(STR(?uri), ".uk") AS ?systemUri)
+                OPTIONAL {{ ?uri dcterms:conformsTo ?conformsto }}
+            }}
+            group by ?uri ?id ?systemUri
+         """        
+        r = sparql_query(q)
+
+        context["conforms_to"] = None 
+
+        for item in r[1]:
+           if 'conforms_to' in item and item['systemUri']['value'] in context["uri"]:
+             context["conforms_to"] = item['conforms_to']['value'] 
+             break 
+
         return templates.TemplateResponse("concept.html", context=context)
 
     def _render_nvs_rdf(self):
