@@ -248,7 +248,7 @@ def get_ontologies() -> Dict:
         logging.error("Environment variable ORDS_ENDPOINT_URL is not set.")
         return {}
     try:
-        url = f"{ORDS_ENDPOINT_URL}/alexk/alexk/ontology"
+        url = f"{ORDS_ENDPOINT_URL}/ontology"
         resp_json = requests.get(url).json()
         ont_data_by_prefix = {ont["prefix"]: ont for ont in resp_json['items']}
         return ont_data_by_prefix
@@ -267,7 +267,7 @@ def get_alt_profiles() -> Dict:
         return {}
     try:
         #url = f"{ORDS_ENDPOINT_URL}/webtabsn/nvs/altprof"
-        url = f"{ORDS_ENDPOINT_URL}/alexk/alexk/altprof"
+        url = f"{ORDS_ENDPOINT_URL}/altprof"
         resp_json = requests.get(url).json()
         altprof_data_by_url = {alt["url"]: alt for alt in resp_json['items']}
         return altprof_data_by_url
@@ -304,7 +304,7 @@ def get_alt_profile_objects(
                 uri=url,
                 id=alt['token'],
                 label=alt['name'],
-                comment=alt['vocprezdes'],
+                comment=alt['vocprezdesc'],
                 mediatypes=media_types,
                 default_mediatype=default_mediatype,
                 languages=["en"],
