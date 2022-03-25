@@ -635,7 +635,6 @@ def collection(request: Request, collection_id, acc_dep_or_concept: str = None):
                                 "message": "There was an error with accessing the Triplestore",
                             },
                         )
-
                     return templates.TemplateResponse(
                         "collection.html",
                         {
@@ -1557,6 +1556,7 @@ class ConceptRenderer(Renderer):
               BIND (COALESCE(?x, "Climate and Forecast Standard Names") AS ?collection_label)
             }}         
         """
+
         r = sparql_query(q)
         if not r[0]:
             return PlainTextResponse(
@@ -1624,6 +1624,8 @@ class ConceptRenderer(Renderer):
             "provenance": [],
             "other": [],
             "profile_token": self.profile,
+            "alt_profiles": self.alt_profiles,
+            "profile_properties_for_button": [],
         }
 
         def make_predicate_label_from_uri(uri):
@@ -1631,6 +1633,7 @@ class ConceptRenderer(Renderer):
 
         alt_profiles = get_alt_profiles()
         profile_url = None
+
         for ap in alt_profiles.values():
             if ap["token"] == self.profile:
                 profile_url = ap["url"]
@@ -1643,6 +1646,7 @@ class ConceptRenderer(Renderer):
             o_notation = (
                 x["o_notation"]["value"] if x.get("o_notation") is not None else None
             )
+
             context["collection_systemUri"] = x["collection_systemUri"]["value"]
             context["collection_label"] = x["collection_label"]["value"]
             if p == str(OWL.deprecated):
@@ -1665,6 +1669,7 @@ class ConceptRenderer(Renderer):
                 p_label = p[len(profile_url):]
                 if p_label[0] == "#":
                     p_label = p_label[1:]
+
                 context["profile_properties"].append(
                     DisplayProperty(p, p_label, o, o_label, o_notation)
                 )
@@ -1694,6 +1699,77 @@ class ConceptRenderer(Renderer):
         clean_prop_list_labels(context["provenance"])
         context["other"].sort(key=lambda x: x.predicate_html)
         clean_prop_list_labels(context["other"])
+
+        q1 = f"""
+             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+             PREFIX dcterms: <http://purl.org/dc/terms/>
+             PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        
+             SELECT ?id ?systemUri
+             (GROUP_CONCAT(?conformsto;SEPARATOR=",") AS ?conforms_to)
+             WHERE {{
+                ?uri a skos:Collection .             
+                BIND (STRAFTER(STRBEFORE(STR(?uri), "/current/"), "/collection/") AS ?id)
+                BIND (STRAFTER(STR(?uri), ".uk") AS ?systemUri)
+                OPTIONAL {{ ?uri dcterms:conformsTo ?conformsto }}
+            }}
+            group by ?uri ?id ?systemUri
+         """        
+        r1 = sparql_query(q1)
+
+        q2 = f"""
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            SELECT DISTINCT ?p ?o ?o_label ?o_notation ?collection_uri ?collection_systemUri ?collection_label
+            WHERE {{
+              BIND (<{self.instance_uri}> AS ?concept)
+              ?concept ?p ?o .
+
+              FILTER ( ?p != skos:broaderTransitive )
+              FILTER ( ?p != skos:narrowerTransitive )
+              FILTER ( ?p != skos:broader )
+              FILTER ( ?p != skos:narrower )
+              FILTER ( ?p != skos:related )
+              FILTER ( ?p != owl:sameAs )
+              FILTER(!isLiteral(?o) || lang(?o) = "en" || lang(?o) = "")
+
+              OPTIONAL {{
+                ?o skos:prefLabel ?o_label ;
+                   skos:notation ?o_notation .
+                FILTER(!isLiteral(?o_label) || lang(?o_label) = "en" || lang(?o_label) = "")
+              }}
+
+              BIND(
+                IF(
+                  CONTAINS(STR(?concept), "standard_name"),
+                    <{DATA_URI}/standard_name/>,
+                    IRI(CONCAT(STRBEFORE(STR(?concept), "/current/"), "/current/"))
+                )
+                AS ?collection_uri
+              )
+              BIND (REPLACE(STR(?collection_uri), "{DATA_URI}", "") AS ?collection_systemUri)
+              OPTIONAL {{?collection_uri skos:prefLabel ?x }}
+              BIND (COALESCE(?x, "Climate and Forecast Standard Names") AS ?collection_label)
+            }}
+        """
+
+        r2 = sparql_query(q2)
+
+        p_keys = [x["p"]["value"] for x in r2[1]]
+
+        context["conforms_to"] = [] 
+
+        for item in r1[1]:
+           if 'conforms_to' in item and item['systemUri']['value'] in context["uri"]:
+             c = item['conforms_to']['value'].split(",")
+             for c_item in c:
+               match = any(c_item in s for s in p_keys) 
+               if match: context["conforms_to"].append(c_item)  
+
+        # print(context["conforms_to"]) # used to build required butons on concept page for access to HTML alt profile view 
+
         return templates.TemplateResponse("concept.html", context=context)
 
     def _render_nvs_rdf(self):
