@@ -1519,17 +1519,12 @@ class ConceptRenderer(Renderer):
                 FILTER ( ?p != skos:related )
                 FILTER ( ?p != owl:sameAs )
             """
-        excluded_profiles = []
-        for alt in self.alt_profiles.values():
-            ontology_prefixes = alt["ontology_prefix"].split(",")
-            if alt["token"] != self.profile:
-                for x in ontology_prefixes:
-                    if self.ontologies[x]["url"] not in excluded_profiles:
-                        excluded_profiles.append(self.ontologies[x]["url"])
-                        exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{self.ontologies[x]["url"]}"))\n'
+
+        for ontology, data in self.ontologies.items():
+            if ontology not in self.profiles[self.profile].ontologies:
+                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{data["url"]}"))\n'
             else:
-                for x in ontology_prefixes:
-                    prefixes += f'PREFIX {self.ontologies[x]["prefix"]}: <{self.ontologies[x]["url"]}>\n'
+                prefixes += f'PREFIX {data["prefix"]}: <{data["url"]}#>\n'
 
         q = f"""
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -1837,14 +1832,12 @@ class ConceptRenderer(Renderer):
     def _render_profile_rdf(self):
         exclude_filters = ""
         prefixes = ""
-        for alt in self.alt_profiles.values():
-            ontology_prefixes = alt["ontology_prefix"].split(",")
-            if alt["token"] != self.profile:
-                for x in ontology_prefixes:
-                    exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{self.ontologies[x]["url"]}"))\n'
+
+        for ontology, data in self.ontologies.items():
+            if ontology not in self.profiles[self.profile].ontologies:
+                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{data["url"]}"))\n'
             else:
-                for x in ontology_prefixes:
-                    prefixes += f'PREFIX {self.ontologies[x]["prefix"]}: <{self.ontologies[x]["url"]}>\n'
+                prefixes += f'PREFIX {data["prefix"]}: <{data["url"]}#>\n'
 
         q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
