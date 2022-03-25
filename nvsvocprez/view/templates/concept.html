@@ -86,6 +86,22 @@
         {% endif %}
       </table>
     </div>
-    {% include 'alt_link.html' %}
+
+    <div style="grid-column: 2; grid-row: 1;">
+      {% include 'alt_link.html' %}
+      {% if conforms_to is defined and conforms_to is not none %}
+        <div>
+        {% for profile in conforms_to %}
+            {% if profile in alt_profiles %}
+              {% set alt = alt_profiles[profile] %}
+              <p>
+                <a class="format-button" style="width:200px;" href="?_profile={{ alt['token'] }}&_mediatype=text/html">{{ alt['description'] }}</a>
+                <span class="tooltip" style="font-weight:bold;">?<span class="tooltiptext">{{ alt['description'] }} HTML view.</span></span>
+              </p>
+            {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
   </div>
 {% endblock %}
