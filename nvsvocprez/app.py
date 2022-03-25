@@ -1480,6 +1480,7 @@ class ConceptRenderer(Renderer):
         }
 
         self.alt_profiles = get_alt_profiles()
+        self.ontologies = get_ontologies()
         collection_uri = self.instance_uri.split("/current/")[0] + "/current/"
         for collection in cache_return(collections_or_conceptschemes="collections"):
             if collection["uri"]["value"] == collection_uri:
@@ -1487,6 +1488,7 @@ class ConceptRenderer(Renderer):
                     get_alt_profile_objects(
                         collection,
                         self.alt_profiles,
+                        ontologies=self.ontologies,
                         media_types=["text/html"] + RDF_MEDIATYPES,
                         default_mediatype="text/html"
                     )
@@ -1516,11 +1518,12 @@ class ConceptRenderer(Renderer):
                 FILTER ( ?p != skos:related )
                 FILTER ( ?p != owl:sameAs )
             """
-        for alt in self.alt_profiles.values():
-            if alt["token"] != self.profile:
-                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{alt["url"]}"))\n'
+
+        for ontology, data in self.ontologies.items():
+            if ontology not in self.profiles[self.profile].ontologies:
+                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{data["url"]}"))\n'
             else:
-                prefixes += f'PREFIX {alt["token"]}: <{alt["url"]}>'
+                prefixes += f'PREFIX {data["prefix"]}: <{data["url"]}#>\n'
 
         q = f"""
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -1774,8 +1777,8 @@ class ConceptRenderer(Renderer):
 
     def _render_nvs_rdf(self):
         exclude_filters = ""
-        for profile in self.alt_profiles:
-            exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{profile}"))\n'
+        for ontology in self.ontologies.values():
+            exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{ontology["url"]}"))\n'
 
         q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>
@@ -1905,11 +1908,12 @@ class ConceptRenderer(Renderer):
     def _render_profile_rdf(self):
         exclude_filters = ""
         prefixes = ""
-        for alt in self.alt_profiles.values():
-            if alt["token"] != self.profile:
-                exclude_filters+= f'FILTER (!STRSTARTS(STR(?p), "{alt["url"]}"))\n'
+
+        for ontology, data in self.ontologies.items():
+            if ontology not in self.profiles[self.profile].ontologies:
+                exclude_filters += f'FILTER (!STRSTARTS(STR(?p), "{data["url"]}"))\n'
             else:
-                prefixes += f'PREFIX {alt["token"]}: <{alt["url"]}#>'
+                prefixes += f'PREFIX {data["prefix"]}: <{data["url"]}#>\n'
 
         q = f"""
             PREFIX dc: <http://purl.org/dc/terms/>

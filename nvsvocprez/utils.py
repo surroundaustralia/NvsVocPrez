@@ -266,7 +266,6 @@ def get_alt_profiles() -> Dict:
         logging.error("Environment variable ORDS_ENDPOINT_URL is not set.")
         return {}
     try:
-        #url = f"{ORDS_ENDPOINT_URL}/webtabsn/nvs/altprof"
         url = f"{ORDS_ENDPOINT_URL}/altprof"
         resp_json = requests.get(url).json()
         altprof_data_by_url = {alt["url"]: alt for alt in resp_json['items']}
